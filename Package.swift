@@ -3,6 +3,30 @@
 
 import PackageDescription
 
+/*let package = Package(
+    name: "DeckOfPlayingCards",
+    products: [
+        .library(name: "DeckOfPlayingCards", targets: ["DeckOfPlayingCards"]),
+    ],
+    dependencies: [
+        .package(name: "PlayingCard",
+                 url: "https://github.com/apple/example-package-playingcard.git",
+                 from: "3.0.0"),
+    ],
+    targets: [
+        .target(
+            name: "DeckOfPlayingCards",
+            dependencies: [
+                .byName(name: "PlayingCard")
+            ]),
+        .testTarget(
+            name: "DeckOfPlayingCardsTests",
+            dependencies: [
+                .target(name: "DeckOfPlayingCards")
+            ]),
+    ]
+)*/
+
 let package = Package(
     name: "LAModule",
     products: [
@@ -20,7 +44,7 @@ let package = Package(
         .package(
             url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework.git", from: "6.9.0"),
         .package(
-            url: "https://github.com/facebook/facebook-ios-sdk", from: "9.0.0"),
+            url: "https://github.com/facebook/facebook-ios-sdk.git", from: "9.0.0"),
         .package(
             url: "https://github.com/qasim/TikTokOpenSDK.git", from: "5.0.0"),
         .package(
@@ -32,6 +56,15 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "LAModule",
-            dependencies: [])
+            dependencies: [
+              
+                .product(name: "OneSignal", package: "OneSignal-iOS-SDK_RKModule"),
+                .product(name: "AppsFlyerLib", package: "AppsFlyerFramework"),
+                .product(name: "FacebookCore", package: "facebook-ios-sdk"),
+                .byName(name: "TikTokOpenSDK"),
+                .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk")  
+            ])
     ]
 )
+
+

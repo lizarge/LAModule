@@ -8,16 +8,12 @@
 import Foundation
 
 protocol LAConfigurationKeysProtocol {
-    static let appsFlyerDevKey:String
-    static var appleAppID:String
-    static var oneSignalAppId:String
-
-    static var fbAppId:String
-    static var fbAppSecret:String
-
-    static var tTAppId:String
-    static var tTAppSecret:String
-
-    static var targetUrlKey:String
-    static var remoteConfigKey :String
+    func appsFlyerDevKey() -> String
+    func appleAppID() -> String
+    func oneSignalAppId() -> String
+    
+    func TTAppId() -> (TTAppId:String,TTAppSecret:String)
+    func remoteConfigKeys() -> (remoteTargetKey:String,remoteLKey:String )
+    
+    func DontForgetIncludeFBKeysInInfo()
 }

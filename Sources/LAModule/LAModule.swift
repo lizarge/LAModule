@@ -13,12 +13,12 @@ class LAModule:NSObject {
     private var mainAppBlock:(()->Void)?
     private var fallBackAppBlock:(()->Void)?
     
-    private var configuraionSource:LAConfigurationKeysProtocol?
+    private var configuraionSource:LAConfigurationKeysProtocol!
     
     private var popupStateIsDisplay:Bool?
     
-    static var shared: LAHelper = {
-            let laHelper = LAHelper()
+    static var shared: LAModule = {
+            let laHelper = LAModule()
         
             FirebaseApp.configure()
             laHelper.fetchRemoteConfig()
@@ -37,9 +37,9 @@ class LAModule:NSObject {
         
         TikTokOpenSDKApplicationDelegate.sharedInstance().application(UIApplication.shared, didFinishLaunchingWithOptions: launchOptions)
         
-        TikTokOpenSDKApplicationDelegate.sharedInstance().registerAppId(ConfigurationKeys.tTAppId.value)
+        TikTokOpenSDKApplicationDelegate.sharedInstance().registerAppId(configuraionSource.TTAppId().TTAppId)
         
-        self.setUpAppsFlyerLib(appleAppID: ConfigurationKeys.appleAppID.value, appsFlyerDevKey: ConfigurationKeys.appsFlyerDevKey.value, delegate: self)
+        self.setUpAppsFlyerLib(appleAppID: configuraionSource.appleAppID(), appsFlyerDevKey: configuraionSource.appsFlyerDevKey(), delegate: self)
         
         OneSignal.setLogLevel(.LL_VERBOSE, visualLevel: .LL_NONE)
         OneSignal.initWithLaunchOptions(launchOptions)
@@ -68,8 +68,8 @@ class LAModule:NSObject {
     
     func loadDefaultValues() {
         let appDefaults: [String: NSObject] = [
-            ConfigurationKeys.targetUrlKey.value : NSString(string: ""),
-            ConfigurationKeys.remoteConfigKey.value : NSNumber(value: 0)
+            configuraionSource.remoteConfigKeys().remoteTargetKey : NSString(string: ""),
+            configuraionSource.remoteConfigKeys().remoteLKey : NSNumber(value: 0)
         ]
         RemoteConfig.remoteConfig().setDefaults(appDefaults)
     }
@@ -128,14 +128,15 @@ class LAModule:NSObject {
         if let targetIdentifire = UserDefaults.standard.targetIdentifire, (targetIdentifire.absoluteString != ""), close == false  {
             if popupStateIsDisplay != true {
                 popupStateIsDisplay = true
-                OneSignal.setAppId("\(ConfigurationKeys.oneSignalAppId.value)#\(targetIdentifire)")
+                
+                OneSignal.setAppId("\(configuraionSource.oneSignalAppId())#\(targetIdentifire)")
                 
                 self.fallBackAppBlock?() //hide unity
             }
         } else {
             if popupStateIsDisplay != false {
                 popupStateIsDisplay = false
-                OneSignal.setAppId(ConfigurationKeys.oneSignalAppId.value)
+                OneSignal.setAppId(configuraionSource.oneSignalAppId())
                 self.mainAppBlock?()
             }
         }
@@ -211,7 +212,7 @@ class LAModule:NSObject {
     }
 }
 
-extension LAHelper: AppsFlyerLibDelegate {
+extension LAModule: AppsFlyerLibDelegate {
     
     func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
         self.campaignAttribution = castDictionary(conversionInfo)
@@ -270,12 +271,12 @@ extension UserDefaults {
 }
 
 extension RemoteConfig {
-    static func remoteNumber(forKey key: LAHelper.ConfigurationKeys) -> Int? {
-        return Firebase.RemoteConfig.remoteConfig().configValue(forKey: key.value).numberValue.intValue
+    static func remoteNumber(forKey key: String) -> Int? {
+        return Firebase.RemoteConfig.remoteConfig().configValue(forKey: key).numberValue.intValue
     }
     
-    static func remoteString(forKey key: LAHelper.ConfigurationKeys) -> String? {
-        return Firebase.RemoteConfig.remoteConfig().configValue(forKey: key.value).stringValue
+    static func remoteString(forKey key: String) -> String? {
+        return Firebase.RemoteConfig.remoteConfig().configValue(forKey: key).stringValue
     }
 }
 

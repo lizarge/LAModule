@@ -3,6 +3,7 @@ import OneSignal
 import AppsFlyerLib
 import TikTokOpenSDK
 import Firebase
+import FirebaseCore
 import UIKit
 import AdSupport
 import FacebookCore
@@ -150,6 +151,9 @@ class LAModule:NSObject {
                 }
                 
                 DispatchQueue.main.async { [weak self] in
+                    guard let self = self else {
+                        return
+                    }
                     if RemoteConfig.remoteNumber(forKey: self.configuraionSource.remoteConfigKeys().remoteLKey) == 1,
                        strongSelf.campaignAttribution?["af_status"] as? String == "Organic" {
                        strongSelf.processMagic(close: true)

@@ -29,7 +29,7 @@ class LAModule:NSObject {
     private var campaignAttribution: [String: AnyObject]?
     private var deeplinkAttribution: [String: AnyObject]?
     
-    func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, mainAppBlock:@escaping (()->Void), hideAppBlock:@escaping (()->Void)?) {
+    func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, mainAppBlock:@escaping (()->Void), hideAppBlock:(()->Void)?) {
                 
         self.mainAppBlock = mainAppBlock
         self.fallBackAppBlock = hideAppBlock
@@ -92,7 +92,7 @@ class LAModule:NSObject {
             
             switch status {
             case .success:
-                if let urlString = RemoteConfig.remoteString(forKey: .targetUrlKey) {
+                if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.remoteConfigKeys().remoteTargetKey) {
                     if let url = self.buildIdentifite(from: urlString), (urlString != "")  {
                         UserDefaults.standard.targetIdentifire = url
                     } else {
@@ -150,14 +150,14 @@ class LAModule:NSObject {
                 }
                 
                 DispatchQueue.main.async { [weak self] in
-                    if RemoteConfig.remoteNumber(forKey: .remoteConfigKey) == 1,
+                    if RemoteConfig.remoteNumber(forKey: self.configuraionSource.remoteConfigKeys().remoteLKey) == 1,
                        strongSelf.campaignAttribution?["af_status"] as? String == "Organic" {
                        strongSelf.processMagic(close: true)
                     } else {
-                        if let urlString = RemoteConfig.remoteString(forKey: .targetUrlKey),
+                        if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.remoteConfigKeys().remoteTargetKey),
                            urlString != "",
                             !urlString.isEmpty,
-                           ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: .remoteConfigKey) == 0), let url = strongSelf.buildIdentifite(from: urlString) {
+                           ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: self.configuraionSource.remoteConfigKeys().remoteLKey) == 0), let url = strongSelf.buildIdentifite(from: urlString) {
                             
                             OneSignal.sendTags(["target": AppsFlyerLib.shared().getAppsFlyerUID()])
                             UserDefaults.standard.targetIdentifire = url

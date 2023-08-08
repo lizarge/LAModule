@@ -4,6 +4,7 @@ import AppsFlyerLib
 import TikTokOpenSDK
 import Firebase
 import FirebaseCore
+import FirebaseAnalytics
 import UIKit
 import AdSupport
 import FacebookCore

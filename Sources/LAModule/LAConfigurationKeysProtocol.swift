@@ -6,14 +6,8 @@
 //
 
 import Foundation
+import UIKit
 
-protocol LAConfigurationKeysProtocol {
-    func appsFlyerDevKey() -> String
-    func appleAppID() -> String
-    func oneSignalAppId() -> String
-    
-    func TTAppId() -> (TTAppId:String,TTAppSecret:String)
-    func remoteConfigKeys() -> (remoteTargetKey:String,remoteLKey:String )
-    
-    func DontForgetIncludeFBKeysInInfo()
+public protocol LAConfigurationKeysProtocol:UIApplicationDelegate {
+    func DontForgetIncludeFBKeysInInfo() -> LAModule.LAConfigurationKeys
 }

@@ -3,32 +3,11 @@
 
 import PackageDescription
 
-/*let package = Package(
-    name: "DeckOfPlayingCards",
-    products: [
-        .library(name: "DeckOfPlayingCards", targets: ["DeckOfPlayingCards"]),
-    ],
-    dependencies: [
-        .package(name: "PlayingCard",
-                 url: "https://github.com/apple/example-package-playingcard.git",
-                 from: "3.0.0"),
-    ],
-    targets: [
-        .target(
-            name: "DeckOfPlayingCards",
-            dependencies: [
-                .byName(name: "PlayingCard")
-            ]),
-        .testTarget(
-            name: "DeckOfPlayingCardsTests",
-            dependencies: [
-                .target(name: "DeckOfPlayingCards")
-            ]),
-    ]
-)*/
-
 let package = Package(
     name: "LAModule",
+    platforms: [
+      .iOS(.v13)
+    ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
@@ -49,7 +28,7 @@ let package = Package(
             url: "https://github.com/qasim/TikTokOpenSDK.git", from: "5.0.0"),
         .package(
             url: "https://github.com/firebase/firebase-ios-sdk.git", from: "9.6.0"),
-        
+ 
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -63,8 +42,10 @@ let package = Package(
                 .product(name: "FacebookCore", package: "facebook-ios-sdk"),
                 .byName(name: "TikTokOpenSDK"),
                 .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
-                .product(name: "FirebaseCore", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),
+                .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),
+                .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
+                
             ])
     ]
 )

@@ -9,17 +9,26 @@ import UIKit
 import AdSupport
 import FacebookCore
 import AVFoundation
+import FirebaseCrashlytics
+import AppTrackingTransparency
+import SwiftUI
 
-class LAModule:NSObject {
+public class LAModule:NSObject {
     
-    private var mainAppBlock:(()->Void)?
+    private var mainAppBlock:(()-> (any View)? )?
     private var fallBackAppBlock:(()->Void)?
+    private var application:UIApplication?
+    private var hostView = PreloadrViewController()
     
-    private var configuraionSource:LAConfigurationKeysProtocol!
+    private var configuraionSource:LAConfigurationKeysProtocol! {
+        didSet {
+            self.loadDefaultValues()
+        }
+    }
     
     private var popupStateIsDisplay:Bool?
     
-    static var shared: LAModule = {
+    static public var shared: LAModule = {
             let laHelper = LAModule()
         
             FirebaseApp.configure()
@@ -31,17 +40,26 @@ class LAModule:NSObject {
     private var campaignAttribution: [String: AnyObject]?
     private var deeplinkAttribution: [String: AnyObject]?
     
-    func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, mainAppBlock:@escaping (()->Void), hideAppBlock:(()->Void)?) {
-                
+    public func showInitializationView(window:inout UIWindow?){
+        window = UIWindow(frame: UIScreen.main.bounds)
+        window?.rootViewController = self.hostView
+        window?.makeKeyAndVisible()
+    }
+    
+    //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
+    public func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, window:inout UIWindow?, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
+        
+        self.showInitializationView(window: &window)
+        
         self.mainAppBlock = mainAppBlock
         self.fallBackAppBlock = hideAppBlock
         self.configuraionSource = configuration
-        
+  
         TikTokOpenSDKApplicationDelegate.sharedInstance().application(UIApplication.shared, didFinishLaunchingWithOptions: launchOptions)
         
-        TikTokOpenSDKApplicationDelegate.sharedInstance().registerAppId(configuraionSource.TTAppId().TTAppId)
+        TikTokOpenSDKApplicationDelegate.sharedInstance().registerAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().tikTokKeys.TTAppId)
         
-        self.setUpAppsFlyerLib(appleAppID: configuraionSource.appleAppID(), appsFlyerDevKey: configuraionSource.appsFlyerDevKey(), delegate: self)
+        self.setUpAppsFlyerLib(appleAppID: configuraionSource.DontForgetIncludeFBKeysInInfo().appleAppID, appsFlyerDevKey: configuraionSource.DontForgetIncludeFBKeysInInfo().appsFlyerDevKey, delegate: self)
         
         OneSignal.setLogLevel(.LL_VERBOSE, visualLevel: .LL_NONE)
         OneSignal.initWithLaunchOptions(launchOptions)
@@ -54,7 +72,33 @@ class LAModule:NSObject {
                     UIApplication.shared,
                    didFinishLaunchingWithOptions: launchOptions
         )
+        
+        NotificationCenter.default.addObserver(self,
+                selector: #selector(didBecomeActiveNotification),
+                name: UIApplication.didBecomeActiveNotification,
+                object: nil)
     }
+    
+    @objc func didBecomeActiveNotification() {
+        AppsFlyerLib.shared().start()
+        if #available(iOS 14, *) {
+            ATTrackingManager.requestTrackingAuthorization { (status) in
+                switch status {
+                case .denied:
+                    print("AuthorizationSatus is denied")
+                case .notDetermined:
+                    print("AuthorizationSatus is notDetermined")
+                case .restricted:
+                    print("AuthorizationSatus is restricted")
+                case .authorized:
+                    print("AuthorizationSatus is authorized")
+                @unknown default:
+                    fatalError("Invalid authorization status")
+                }
+            }
+        }
+    }
+    
     
     func setUpAppsFlyerLib(appleAppID: String, appsFlyerDevKey: String, delegate: NSObject) {
         AppsFlyerLib.shared().isDebug = true
@@ -70,18 +114,16 @@ class LAModule:NSObject {
     
     func loadDefaultValues() {
         let appDefaults: [String: NSObject] = [
-            configuraionSource.remoteConfigKeys().remoteTargetKey : NSString(string: ""),
-            configuraionSource.remoteConfigKeys().remoteLKey : NSNumber(value: 0)
+            configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey : NSString(string: ""),
+            configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey : NSNumber(value: 0)
         ]
         RemoteConfig.remoteConfig().setDefaults(appDefaults)
     }
     
     func fetchRemoteConfig() {
         
-        self.loadDefaultValues()
-        
         let settings = RemoteConfigSettings()
-        settings.minimumFetchInterval = 0//60.0*60.0
+        settings.minimumFetchInterval = 0
         RemoteConfig.remoteConfig().configSettings = settings
         
         Firebase.RemoteConfig.remoteConfig().fetch() { (status, error) in
@@ -94,7 +136,7 @@ class LAModule:NSObject {
             
             switch status {
             case .success:
-                if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.remoteConfigKeys().remoteTargetKey) {
+                if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey) {
                     if let url = self.buildIdentifite(from: urlString), (urlString != "")  {
                         UserDefaults.standard.targetIdentifire = url
                     } else {
@@ -131,15 +173,20 @@ class LAModule:NSObject {
             if popupStateIsDisplay != true {
                 popupStateIsDisplay = true
                 
-                OneSignal.setAppId("\(configuraionSource.oneSignalAppId())#\(targetIdentifire)")
+                self.hostView.hideSwiftUI()
+                
+                OneSignal.setAppId("\(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)#\(targetIdentifire)")
                 
                 self.fallBackAppBlock?() //hide unity
             }
         } else {
             if popupStateIsDisplay != false {
                 popupStateIsDisplay = false
-                OneSignal.setAppId(configuraionSource.oneSignalAppId())
-                self.mainAppBlock?()
+                OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
+                
+                if let rootView = self.mainAppBlock?() {
+                    self.hostView.showSwiftUI(view: rootView)
+                }
             }
         }
    
@@ -155,14 +202,14 @@ class LAModule:NSObject {
                     guard let self = self else {
                         return
                     }
-                    if RemoteConfig.remoteNumber(forKey: self.configuraionSource.remoteConfigKeys().remoteLKey) == 1,
+                    if RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 1,
                        strongSelf.campaignAttribution?["af_status"] as? String == "Organic" {
                        strongSelf.processMagic(close: true)
                     } else {
-                        if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.remoteConfigKeys().remoteTargetKey),
+                        if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey),
                            urlString != "",
                             !urlString.isEmpty,
-                           ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: self.configuraionSource.remoteConfigKeys().remoteLKey) == 0), let url = strongSelf.buildIdentifite(from: urlString) {
+                           ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 0), let url = strongSelf.buildIdentifite(from: urlString) {
                             
                             OneSignal.sendTags(["target": AppsFlyerLib.shared().getAppsFlyerUID()])
                             UserDefaults.standard.targetIdentifire = url
@@ -215,27 +262,47 @@ class LAModule:NSObject {
         
         return components.url
     }
+    
+    public struct LAConfigurationKeys {
+        
+        public init(appsFlyerDevKey:String, appleAppID:String, oneSignalAppId:String, tikTokKeys:(TTAppId:String,TTAppSecret:String), remoteConfigKeys:(remoteTargetKey:String,remoteLKey:String)  ){
+            
+            self.appsFlyerDevKey = appsFlyerDevKey
+            self.appleAppID = appleAppID
+            self.oneSignalAppId = oneSignalAppId
+            
+            self.tikTokKeys = tikTokKeys
+            self.remoteConfigKeys = remoteConfigKeys
+        }
+        
+        public let appsFlyerDevKey:String
+        public let appleAppID:String
+        public let oneSignalAppId:String
+        
+        public let tikTokKeys:(TTAppId:String,TTAppSecret:String)
+        public let remoteConfigKeys:(remoteTargetKey:String,remoteLKey:String)
+    }
 }
 
 extension LAModule: AppsFlyerLibDelegate {
     
-    func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+    public func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
         self.campaignAttribution = castDictionary(conversionInfo)
         self.processMagic(fetch: true)
         print("onConversionDataSuccess")
     }
     
-    func onConversionDataFail(_ error: Error) {
+    public func onConversionDataFail(_ error: Error) {
         self.processMagic(close: true, fetch: true)
         print("onConversionDataFail \(error.localizedDescription)")
     }
     
-    func onAppOpenAttribution(_ attributionData: [AnyHashable : Any]) {
+    public func onAppOpenAttribution(_ attributionData: [AnyHashable : Any]) {
         self.deeplinkAttribution = castDictionary(attributionData)
         print("onAppOpenAttribution")
     }
     
-    func onAppOpenAttributionFailure(_ error: Error) {
+    public func onAppOpenAttributionFailure(_ error: Error) {
         self.processMagic(close: true, fetch: true)
         print("onAppOpenAttributionFailure \(error.localizedDescription)")
     }
@@ -254,6 +321,7 @@ extension LAModule: AppsFlyerLibDelegate {
     func nonFatalLog(message: String) {
         #if DEBUG
         let error = NSError(domain: "Debug A/B Testing Error", code: 0 ,userInfo: [NSLocalizedDescriptionKey : message])
+        
         Crashlytics.crashlytics().record(error: error)
         #else
         let error = NSError(domain: "A/B Testing Error", code: 0 ,userInfo: [NSLocalizedDescriptionKey : message])
@@ -272,6 +340,8 @@ extension UserDefaults {
             self.set(newValue?.absoluteString, forKey: #function)
         }
     }
+    
+  
     
 }
 

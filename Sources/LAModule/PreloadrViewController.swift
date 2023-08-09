@@ -63,9 +63,11 @@ public class PreloadrViewController:UIViewController{
     public func showSwiftUI(view:some View){
         let vc = UIHostingController(rootView: view)
         hostingView = vc
+        vc.modalPresentationStyle = .fullScreen
         
         if let window = UIApplication.shared.delegate?.window {
             UIApplication.shared.delegate?.window??.rootViewController?.dismiss(animated: true,completion: {
+                vc.modalPresentationStyle = .fullScreen
                 self.present(vc, animated: false)
             })
         } else {

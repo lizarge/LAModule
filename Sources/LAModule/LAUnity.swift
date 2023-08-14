@@ -31,7 +31,7 @@ public class LAUnity: UIResponder, UIApplicationDelegate {
     }
 
     public func show(in hostMainWindow: UIWindow?) {
-        self.hostMainWindow(hostMainWindow)
+        self.setHostMainWindow(hostMainWindow)
         if isInitialized {
             showWindow()
         } else {

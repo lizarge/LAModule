@@ -16,8 +16,7 @@ import UIKit
 
 public class LAUnity: UIResponder, UIApplicationDelegate {
 
-    
-    static let shared = Unity()
+    static let shared = LAUnity()
 
     private let dataBundleId: String = "com.unity3d.framework"
     private let frameworkPath: String = "/Frameworks/UnityFramework.framework"
@@ -98,7 +97,7 @@ public class LAUnity: UIResponder, UIApplicationDelegate {
     }
 }
 
-extension Unity: UnityFrameworkListener {
+extension LAUnity: UnityFrameworkListener {
     func unityDidUnload(_ notification: Notification!) {
         ufw?.unregisterFrameworkListener(self)
         ufw = nil

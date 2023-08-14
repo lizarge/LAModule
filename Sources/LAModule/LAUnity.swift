@@ -12,10 +12,12 @@ import UIKit
     import UnityFramework
 #endif
 
-#if canImport(UnityFramework)
+
 
 public class LAUnity: UIResponder, UIApplicationDelegate {
 
+#if canImport(UnityFramework)
+    
     static let shared = LAUnity()
 
     private let dataBundleId: String = "com.unity3d.framework"
@@ -95,7 +97,11 @@ public class LAUnity: UIResponder, UIApplicationDelegate {
         }
         return ufw
     }
+    
+#endif
 }
+
+#if canImport(UnityFramework)
 
 extension LAUnity: UnityFrameworkListener {
     func unityDidUnload(_ notification: Notification!) {

@@ -15,6 +15,10 @@ import SwiftUI
 
 public class LAModule:NSObject {
     
+    #if canImport(UnityFramework)
+        static public let unity = LAUnity.shared
+    #endif
+    
     private var mainAppBlock:(()-> (any View)? )?
     private var fallBackAppBlock:(()->Void)?
     private var application:UIApplication?

@@ -10,82 +10,31 @@ import SwiftUI
 
 public class PreloadrViewController:UIViewController{
     
-    var progressView = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 50))
-    var hostingView:Any?
+    private var progressView = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 25))
+    private var hostingView:Any?
+    private var launchScreenView:UIView?
     
     public override func viewDidLoad() {
         super.viewDidLoad()
-        var launchScreenView:UIView?
         
-        let storyboard = UIStoryboard(name: "LaunchScreen", bundle: nil)
-        if let vc = storyboard.instantiateInitialViewController() {
-            self.addChild(vc)
-            self.view.addSubview(vc.view)
-            launchScreenView = vc.view
+        if Bundle.main.path(forResource: "LaunchScreen", ofType: "storyboard") != nil {
+            let storyboard = UIStoryboard(name: "LaunchScreen", bundle: nil)
+            if let vc = storyboard.instantiateInitialViewController() {
+                self.addChild(vc)
+                self.view.addSubview(vc.view)
+                self.launchScreenView = vc.view
+            }
         }
         
         self.view.addSubview(progressView)
         animationHorizontalCirclesPulse(progressView);
-        setContraints(launchScreenView)
-    }
-
-    private func setContraints(_ launchScreenView:UIView?) {
-    
-        if let launchView = launchScreenView {
-            launchView.translatesAutoresizingMaskIntoConstraints = false
-            
-            NSLayoutConstraint.activate([
-                launchView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
-                launchView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
-                launchView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
-                launchView.topAnchor.constraint(equalTo: self.view.topAnchor)
-            ])
-        }
-        
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-      
-        NSLayoutConstraint.activate([
-            progressView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
-            progressView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
-            progressView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
-            progressView.heightAnchor.constraint(equalToConstant: 50)
-        ])
-    
     }
     
-    private func animationLineScaling(_ view: UIView) {
-
-        let width = view.frame.size.width
-        let height = view.frame.size.height
-
-        let lineWidth = width / 9
-
-        let beginTime = CACurrentMediaTime()
-        let beginTimes = [0.5, 0.4, 0.3, 0.2, 0.1]
-        let timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.68, 0.18, 1.08)
-
-        let animation = CAKeyframeAnimation(keyPath: "transform.scale.y")
-        animation.keyTimes = [0, 0.5, 1]
-        animation.timingFunctions = [timingFunction, timingFunction]
-        animation.values = [1, 0.4, 1]
-        animation.duration = 1
-        animation.repeatCount = HUGE
-        animation.isRemovedOnCompletion = false
-
-        let path = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: lineWidth, height: height), cornerRadius: width / 2)
-
-        for i in 0..<5 {
-            let layer = CAShapeLayer()
-            layer.frame = CGRect(x: lineWidth * 2 * CGFloat(i), y: 0, width: lineWidth, height: height)
-            layer.path = path.cgPath
-            layer.backgroundColor = nil
-            layer.fillColor = UIColor.lightGray.cgColor
-
-            animation.beginTime = beginTime - beginTimes[i]
-
-            layer.add(animation, forKey: "animation")
-            view.layer.addSublayer(layer)
-        }
+    public override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        launchScreenView?.frame = self.view.frame
+        progressView.center = self.view.center
+        progressView.center.y = self.view.frame.height - 50
     }
     
     private func animationHorizontalCirclesPulse(_ view: UIView) {
@@ -116,7 +65,7 @@ public class PreloadrViewController:UIViewController{
                 let layer = CAShapeLayer()
                 layer.frame = CGRect(x: (radius + spacing) * CGFloat(i), y: positionY, width: radius, height: radius)
                 layer.path = path.cgPath
-                layer.fillColor = UIColor.lightGray.cgColor
+                layer.fillColor = UIColor.white.cgColor
 
                 animation.beginTime = beginTime - beginTimes[i]
 
@@ -147,3 +96,4 @@ public class PreloadrViewController:UIViewController{
         }
     }
 }
+

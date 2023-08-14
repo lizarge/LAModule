@@ -47,7 +47,14 @@ public class LAModule:NSObject {
     }
     
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, window:inout UIWindow?, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
+    private func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak window] in
+            self.enableMetrics(launchOptions: launchOptions, configuration: configuration, window: &window, mainAppBlock: showHostApp, hideAppBlock: virtualAppDidShow)
+        }
+    }
+    
+    private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, window:inout UIWindow?, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
         
         self.showInitializationView(window: &window)
         

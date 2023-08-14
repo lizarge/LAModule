@@ -10,14 +10,12 @@ import SwiftUI
 
 public class PreloadrViewController:UIViewController{
     
-    var progressView = UIView()
+    var progressView = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 50))
     var hostingView:Any?
     
     public override func viewDidLoad() {
         super.viewDidLoad()
         var launchScreenView:UIView?
-        
-        progressView.backgroundColor = .red
         
         let storyboard = UIStoryboard(name: "LaunchScreen", bundle: nil)
         if let vc = storyboard.instantiateInitialViewController() {
@@ -50,7 +48,7 @@ public class PreloadrViewController:UIViewController{
             progressView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
             progressView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
             progressView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
-            progressView.heightAnchor.constraint(equalToConstant: 20)
+            progressView.heightAnchor.constraint(equalToConstant: 50)
         ])
     
     }

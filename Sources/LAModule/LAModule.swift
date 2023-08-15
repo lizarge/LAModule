@@ -29,12 +29,12 @@ public class LAModule:NSObject {
     private var popupStateIsDisplay:Bool?
     
     static public var shared: LAModule = {
-            let laHelper = LAModule()
-        
-            FirebaseApp.configure()
-            laHelper.fetchRemoteConfig()
-        
-           return laHelper
+        let laHelper = LAModule()
+    
+        FirebaseApp.configure()
+        laHelper.fetchRemoteConfig()
+    
+       return laHelper
     }()
     
     private var campaignAttribution: [String: AnyObject]?
@@ -51,7 +51,7 @@ public class LAModule:NSObject {
         
         self.showInitializationView(window: &window)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { 
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             self.enableMetrics(launchOptions: launchOptions, configuration: configuration, mainAppBlock: showHostApp, hideAppBlock: virtualAppDidShow)
         }
     }

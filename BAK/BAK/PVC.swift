@@ -8,7 +8,7 @@
 import UIKit
 import SwiftUI
 
-public class PreloadrViewController:UIViewController{
+public class PVC:UIViewController{
     
     private var progressView = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 25))
     private var hostingView:Any?

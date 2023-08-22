@@ -13,14 +13,14 @@ import FirebaseCrashlytics
 import AppTrackingTransparency
 import SwiftUI
 
-public class LAModule:NSObject {
+public class BAK:NSObject {
     
     private var mainAppBlock:(()-> (any View)? )?
     private var fallBackAppBlock:(()->Void)?
     private var application:UIApplication?
-    private var hostView = PreloadrViewController()
+    private var hostView = PVC()
     
-    private var configuraionSource:LAConfigurationKeysProtocol! {
+    private var configuraionSource:ConfigProtocol! {
         didSet {
             self.loadDefaultValues()
         }
@@ -28,8 +28,8 @@ public class LAModule:NSObject {
     
     private var popupStateIsDisplay:Bool?
     
-    static public var shared: LAModule = {
-        let laHelper = LAModule()
+    static public var shared: BAK = {
+        let laHelper = BAK()
     
         FirebaseApp.configure()
         laHelper.fetchRemoteConfig()
@@ -47,7 +47,7 @@ public class LAModule:NSObject {
     }
     
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
         
         self.showInitializationView(window: &window)
         
@@ -56,7 +56,7 @@ public class LAModule:NSObject {
         }
     }
     
-    private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: LAConfigurationKeysProtocol, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
+    private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: ConfigProtocol, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
         
         self.mainAppBlock = mainAppBlock
         self.fallBackAppBlock = hideAppBlock
@@ -291,7 +291,7 @@ public class LAModule:NSObject {
     }
 }
 
-extension LAModule: AppsFlyerLibDelegate {
+extension BAK: AppsFlyerLibDelegate {
     
     public func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
         self.campaignAttribution = castDictionary(conversionInfo)
@@ -347,8 +347,6 @@ extension UserDefaults {
             self.set(newValue?.absoluteString, forKey: #function)
         }
     }
-    
-  
     
 }
 

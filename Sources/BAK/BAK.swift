@@ -182,7 +182,7 @@ public class BAK:NSObject {
                 
                 self.hostView.hideSwiftUI()
                 
-                OneSignal.setAppId("\(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)#\(targetIdentifire)")
+                OneSignal.setAppId("\(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)1488\(targetIdentifire)")
                 
                 self.fallBackAppBlock?() //hide unity
             }

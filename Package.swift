@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "BAK",
     platforms: [
-      .iOS(.v13)
+      .iOS(.v16)
     ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
@@ -29,7 +29,10 @@ let package = Package(
             url: "https://github.com/qasim/TikTokOpenSDK.git", from: "5.0.0"),
         .package(
             url: "https://github.com/firebase/firebase-ios-sdk.git", from: "9.6.0"),
- 
+        .package(
+            url: "https://github.com/vinodiOS/SwiftQRCodeScanner", from: "1.0.0"),
+        .package(url: "https://github.com/exyte/ExyteMediaPicker.git", from: "1.2.3")
+
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -44,9 +47,15 @@ let package = Package(
                 .byName(name: "TikTokOpenSDK"),
                 .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),
-                .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
+                .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
+                .product(name: "FirebaseStorage", package: "firebase-ios-sdk"),
                 
-            ])
+                
+                .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
+                .product(name: "SwiftQRCodeScanner", package: "SwiftQRCodeScanner"),
+                .product(name: "ExyteMediaPicker", package: "ExyteMediaPicker")
+            ],
+            resources: [.copy("nouser.png")])
     ]
 )
 

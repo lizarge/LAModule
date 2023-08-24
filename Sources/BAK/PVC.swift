@@ -10,8 +10,8 @@ import SwiftUI
 
 public class PVC:UIViewController{
     
-    private var progressView = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 25))
-    private var hostingView:Any?
+    private var progressView = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 50))
+    private var hostingView:UIViewController?
     private var launchScreenView:UIView?
     
     public override func viewDidLoad() {
@@ -25,14 +25,17 @@ public class PVC:UIViewController{
         }
         
         self.view.addSubview(progressView)
-        animationHorizontalCirclesPulse(progressView);
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.animationMultipleCirclePulse(self.progressView);
+        }
     }
     
     public override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         launchScreenView?.frame = self.view.frame
         progressView.center = self.view.center
-        progressView.center.y = self.view.frame.height - 50
+        progressView.center.y = 100
     }
     
     private func animationHorizontalCirclesPulse(_ view: UIView) {
@@ -72,24 +75,66 @@ public class PVC:UIViewController{
             }
         }
     
+    //-------------------------------------------------------------------------------------------------------------------------------------------
+        private func animationMultipleCirclePulse(_ view: UIView) {
+
+            let width = view.frame.size.width
+            let height = view.frame.size.height
+            let center = CGPoint(x: width / 2, y: height / 2)
+            let radius = width / 2
+
+            let duration = 1.0
+            let beginTime = CACurrentMediaTime()
+            let beginTimes = [0, 0.3, 0.6]
+
+            let animationScale = CABasicAnimation(keyPath: "transform.scale")
+            animationScale.duration = duration
+            animationScale.fromValue = 0
+            animationScale.toValue = 1
+
+            let animationOpacity = CAKeyframeAnimation(keyPath: "opacity")
+            animationOpacity.duration = duration
+            animationOpacity.keyTimes = [0, 0.05, 1]
+            animationOpacity.values = [0, 1, 0]
+
+            let animation = CAAnimationGroup()
+            animation.animations = [animationScale, animationOpacity]
+            animation.timingFunction = CAMediaTimingFunction(name: .linear)
+            animation.duration = duration
+            animation.repeatCount = HUGE
+            animation.isRemovedOnCompletion = false
+
+            let path = UIBezierPath(arcCenter: center, radius: radius, startAngle: 0, endAngle: 2 * .pi, clockwise: false)
+
+            for i in 0..<3 {
+                let layer = CAShapeLayer()
+                layer.frame = CGRect(x: 0, y: 0, width: width, height: height)
+                layer.path = path.cgPath
+                layer.fillColor = UIColor.white.cgColor
+                layer.opacity = 0
+
+                animation.beginTime = beginTime + beginTimes[i]
+
+                layer.add(animation, forKey: "animation")
+                view.layer.addSublayer(layer)
+            }
+        }
+    
     public func showSwiftUI(view:some View){
         let vc = UIHostingController(rootView: view)
         hostingView = vc
-        vc.modalPresentationStyle = .fullScreen
+        vc.view.frame = self.view.frame
         
-        if let window = UIApplication.shared.delegate?.window {
-            UIApplication.shared.delegate?.window??.rootViewController?.dismiss(animated: true,completion: {
-                vc.modalPresentationStyle = .fullScreen
-                self.present(vc, animated: false)
-            })
-        } else {
-            self.present(vc, animated: false)
-        }
+        UIView.transition(with: self.view, duration: 0.1, options: .transitionCrossDissolve, animations: {
+            self.addChild(vc)
+            self.view.addSubview(vc.view)
+        }, completion: nil)
     }
     
     public func hideSwiftUI(){
         if hostingView != nil {
-            self.dismiss(animated: false)
+            hostingView?.view.removeFromSuperview()
+            hostingView?.removeFromParent()
             hostingView = nil
         }
     }

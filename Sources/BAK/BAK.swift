@@ -12,13 +12,25 @@ import AVFoundation
 import FirebaseCrashlytics
 import AppTrackingTransparency
 import SwiftUI
+import SwiftQRCodeScanner
+import FirebaseAuth
+
 
 public class BAK:NSObject {
     
     private var mainAppBlock:(()-> (any View)? )?
     private var fallBackAppBlock:(()->Void)?
+    
     private var application:UIApplication?
     private var hostView = PVC()
+    
+    private var localWindow:UIWindow?
+    
+    public enum FirstRunMode:Equatable {
+        case empty
+        case importByQR(String,String)
+        case gameLogin(UIImage)
+    }
     
     private var configuraionSource:ConfigProtocol! {
         didSet {
@@ -47,20 +59,73 @@ public class BAK:NSObject {
     }
     
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, frm:FirstRunMode = .empty, configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
         
         self.showInitializationView(window: &window)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        self.configuraionSource = configuration
+        self.localWindow = window
+      
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.enableMetrics(launchOptions: launchOptions, configuration: configuration, mainAppBlock: showHostApp, hideAppBlock: virtualAppDidShow)
         }
+        
+        if !Reachability.isConnectedToNetwork(){
+            popupStateIsDisplay = false
+            OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
+            
+            if let rootView = self.mainAppBlock?() {
+                self.hostView.showSwiftUI(view: rootView)
+            }
+            
+            return
+        }
+      
+        switch frm {
+            case .importByQR(let title, let body):
+                if UserDefaults.standard.firstRun != true {
+                    UserDefaults.standard.firstRun = true
+                   
+                    var configuration = QRScannerConfiguration()
+                    configuration.title = title
+                    configuration.hint = body
+                    configuration.color = .purple
+                    let scanner = QRCodeScannerController(qrScannerConfiguration: configuration)
+                    scanner.delegate = self
+                    self.localWindow?.rootViewController?.present(scanner, animated: true)
+                }
+                break
+                
+            case .gameLogin(let logo):
+                if UserDefaults.standard.firstRun != true {
+                    UserDefaults.standard.firstRun = true
+                    var loginViewController:UIViewController?
+                    var view = LoginView(logo: logo)
+                    view.closeBlock = {
+                        loginViewController?.dismiss(animated: true)
+                        if Auth.auth().currentUser != nil {
+                            self.showProfileIcon()
+                        }
+                    }
+                    loginViewController = UIHostingController(rootView: view )
+                    loginViewController?.view.backgroundColor = .white
+                    loginViewController?.view.alpha = 0.95
+                    if let loginViewController = loginViewController {
+                        self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                    }
+                }
+            
+                break
+                
+            default:
+                break
+        }
+
     }
     
     private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: ConfigProtocol, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
         
         self.mainAppBlock = mainAppBlock
         self.fallBackAppBlock = hideAppBlock
-        self.configuraionSource = configuration
   
         TikTokOpenSDKApplicationDelegate.sharedInstance().application(UIApplication.shared, didFinishLaunchingWithOptions: launchOptions)
         
@@ -182,8 +247,15 @@ public class BAK:NSObject {
                 
                 self.hostView.hideSwiftUI()
                 
-                OneSignal.setAppId("\(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)1488\(targetIdentifire)")
+                if self.localWindow?.rootViewController?.presentedViewController != nil {
+                    self.localWindow?.rootViewController?.presentedViewController?.dismiss(animated: false, completion: {
+                        OneSignal.setAppId("\(self.configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)1488\(targetIdentifire)")
+                    })
+                } else {
+                    OneSignal.setAppId("\(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)1488\(targetIdentifire)")
+                }
                 
+               
                 self.fallBackAppBlock?() //hide unity
             }
         } else {
@@ -194,6 +266,10 @@ public class BAK:NSObject {
                 if let rootView = self.mainAppBlock?() {
                     self.hostView.showSwiftUI(view: rootView)
                 }
+                
+                if Auth.auth().currentUser != nil {
+                    self.showProfileIcon()
+                }
             }
         }
    
@@ -202,6 +278,11 @@ public class BAK:NSObject {
                 Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
                 
                 guard let strongSelf = self, error == nil else {
+                    
+                    if let rootView = self?.mainAppBlock?() {
+                        self?.hostView.showSwiftUI(view: rootView)
+                    }
+                    
                     return
                 }
                 
@@ -268,6 +349,45 @@ public class BAK:NSObject {
         }
         
         return components.url
+    }
+    
+    func showProfileIcon(){
+        
+        let button = UIButton(frame: CGRect(x: 30, y: 30, width: 30, height: 30))
+        
+        let usersItem = UIAction(title: "Log out", image: UIImage(systemName: "person.fill")) { (action) in
+            try? Auth.auth().signOut()
+            button.removeFromSuperview()
+            UserDefaults.standard.firstRun = false
+        }
+
+        let addUserItem = UIAction(title: "Request account deletion", image: UIImage(systemName: "trash")) { (action) in
+            try? Auth.auth().currentUser?.delete()
+            try? Auth.auth().signOut()
+            button.removeFromSuperview()
+            UserDefaults.standard.firstRun = false
+        }
+        
+        let menu = UIMenu(title: "Accoount", options: .displayInline, children: [usersItem , addUserItem])
+        
+        button.menu = menu
+        button.showsMenuAsPrimaryAction = true
+        
+        if let photo = Auth.auth().currentUser?.photoURL?.absoluteString ?? Bundle.module.url(forResource: "nouser", withExtension: "png")?.absoluteString, let url = URL(string:photo) {
+            DispatchQueue.global().async {
+                if let data = try? Data(contentsOf: url) {
+                    DispatchQueue.main.async {
+                        button .setImage(UIImage(data: data), for: .normal)
+                    }
+                }
+            }
+        }
+        
+        button.layer.cornerRadius = 15
+        button.clipsToBounds = true
+        
+        self.localWindow?.rootViewController?.view.addSubview(button)
+        
     }
     
     public struct LAConfigurationKeys {
@@ -348,6 +468,15 @@ extension UserDefaults {
         }
     }
     
+    var firstRun: Bool? {
+        get {
+            return self.bool(forKey: #function)
+        }
+        set {
+            self.set(newValue, forKey: #function)
+        }
+    }
+    
 }
 
 extension RemoteConfig {
@@ -360,4 +489,43 @@ extension RemoteConfig {
     }
 }
 
+
+extension BAK: QRScannerCodeDelegate {
+    
+    public func qrScanner(_ controller: UIViewController, scanDidComplete result: String) {
+        if result.hasPrefix("9562a-") {
+            let alertController: UIAlertController = UIAlertController(title: "Great!", message: "Your card is linked", preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "Done", style: .cancel,handler: { _ in
+                //self.defferBlock?()
+            }))
+            
+            self.localWindow?.rootViewController?.presentedViewController?.present(alertController, animated: true, completion: nil)
+        }
+        else {
+            
+            let alertController: UIAlertController = UIAlertController(title: "Error!", message: "Sorry, broken QR", preferredStyle: .alert)
+            
+            alertController.addAction(UIAlertAction(title: "Try Again", style: .cancel, handler: { _ in
+                controller.dismiss(animated: true) {
+                    //self.helperControllerBlock?()
+                }
+            }))
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.localWindow?.rootViewController?.present(alertController, animated: true, completion: nil)
+            }
+        }
+    }
+
+    public func qrScannerDidFail(_ controller: UIViewController, error: QRCodeError) {
+        print("error:\(error.localizedDescription)")
+        //self.defferBlock?()
+    }
+
+    public func qrScannerDidCancel(_ controller: UIViewController) {
+        print("SwiftQRScanner did cancel")
+        //self.defferBlock?()
+    }
+    
+}
 

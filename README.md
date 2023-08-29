@@ -3,4 +3,6 @@
 A description of this package.
 # LAModule
 
-6
+https://www.chosic.com
+https://tunetank.com/
+

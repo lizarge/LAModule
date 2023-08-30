@@ -140,3 +140,8 @@ public class PVC:UIViewController{
     }
 }
 
+struct Empty: View {
+    var body: some View {
+        Text("one")
+    }
+}

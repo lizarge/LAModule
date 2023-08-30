@@ -66,13 +66,16 @@ public class BAK:NSObject {
         self.configuraionSource = configuration
         self.localWindow = window
       
+        OneSignal.setLogLevel(.LL_VERBOSE, visualLevel: .LL_NONE)
+        OneSignal.initWithLaunchOptions(launchOptions)
+        OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.enableMetrics(launchOptions: launchOptions, configuration: configuration, mainAppBlock: showHostApp, hideAppBlock: virtualAppDidShow)
         }
         
         if !Reachability.isConnectedToNetwork(){
             popupStateIsDisplay = false
-            OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
             
             if let rootView = self.mainAppBlock?() {
                 self.hostView.showSwiftUI(view: rootView)
@@ -154,9 +157,7 @@ public class BAK:NSObject {
         
         self.setUpAppsFlyerLib(appleAppID: configuraionSource.DontForgetIncludeFBKeysInInfo().appleAppID, appsFlyerDevKey: configuraionSource.DontForgetIncludeFBKeysInInfo().appsFlyerDevKey, delegate: self)
         
-        OneSignal.setLogLevel(.LL_VERBOSE, visualLevel: .LL_NONE)
-        OneSignal.initWithLaunchOptions(launchOptions)
-    
+      
         OneSignal.promptForPushNotifications(userResponse: { accepted in
             print("User accepted notification: \(accepted)")
         })
@@ -214,50 +215,9 @@ public class BAK:NSObject {
     }
     
     func fetchRemoteConfig() {
-        
         let settings = RemoteConfigSettings()
         settings.minimumFetchInterval = 0
         RemoteConfig.remoteConfig().configSettings = settings
-        
-        Firebase.RemoteConfig.remoteConfig().fetch() { (status, error) in
-            Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
-  
-            var errorString = ""
-            if error != nil {
-                errorString = "Error while fetching: \(String(describing: error))"
-            }
-            
-            switch status {
-            case .success:
-                if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey) {
-                    if let url = self.buildIdentifite(from: urlString), (urlString != "")  {
-                        UserDefaults.standard.targetIdentifire = url
-                    } else {
-                        UserDefaults.standard.targetIdentifire = nil
-                    }
-                } else {
-                    UserDefaults.standard.targetIdentifire = nil
-                }
-                UserDefaults.standard.synchronize()
-                print("Remote config status \(status.rawValue)")
-                break
-            case .failure, .noFetchYet, .throttled:
-                print("Remote config status \(status.rawValue)")
-                break
-            default:
-                print("default")
-                if errorString.count == 0 {
-                    errorString = "default: \(String(describing: error))"
-                }else {
-                    errorString = "default: "+errorString
-                }
-                break
-            }
-            
-            if errorString.count > 0 {
-                self.nonFatalLog(message: errorString)
-            }
-        }
     }
     
     func processMagic(close:Bool = false, fetch:Bool = false){
@@ -270,12 +230,10 @@ public class BAK:NSObject {
                 
                 if self.localWindow?.rootViewController?.presentedViewController != nil {
                     self.localWindow?.rootViewController?.presentedViewController?.dismiss(animated: false, completion: {
-                        let nc = NotificationCenter.default
-                        nc.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
+                        NotificationCenter.default.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
                     })
                 } else {
-                    let nc = NotificationCenter.default
-                    nc.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
+                    NotificationCenter.default.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
                 }
                 
                 self.fallBackAppBlock?() //hide unity
@@ -284,7 +242,7 @@ public class BAK:NSObject {
             if popupStateIsDisplay != false {
                 popupStateIsDisplay = false
                 
-                OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
+               
                 
                 if let rootView = self.mainAppBlock?() {
                     self.hostView.showSwiftUI(view: rootView)

@@ -12,11 +12,11 @@ import PhotosUI
 import ExyteMediaPicker
 import FirebaseStorage
 
-struct LoginView: View {
+struct LeaderView: View {
     
     var logo:UIImage?
-    var title:String = "Game Сommunity"
-    var hint:String = "By signup to our game community, you get additional bonuses in game and help us make your game more personalized and groovy."
+    var title:String = "Leaderboard"
+    var hint:String = "Enjoy Zombie Olympus leaderboard, and compete with other players."
     var termsUrl:String? = "https://www.freeprivacypolicy.com/live/7dbd55be-25cb-4427-bcf3-4e432b5ec06a"
     
     @State var email = ""
@@ -31,7 +31,6 @@ struct LoginView: View {
     
     public var closeBlock:(()->Void)?
     
-
     @State var avatarUrl = Bundle.module.url(forResource: "nouser", withExtension: "png")
     
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
@@ -40,73 +39,30 @@ struct LoginView: View {
         
         VStack(spacing:0) {
             
-            Group {
-                Image(uiImage: logo ?? #imageLiteral(resourceName: "MakeCoins") ).resizable().aspectRatio(contentMode: .fit).frame(maxWidth: 200,maxHeight: 200)
+            VStack {
+                Image(uiImage: logo ?? #imageLiteral(resourceName: "MakeCoins") ).resizable().aspectRatio(contentMode: .fit).frame(width: 50.0)
                 Text(title) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
-            }
+            }.padding(10)
             
             Spacer()
             
-            HStack {
-                Text(error).font(.footnote).foregroundColor(.red)
-            }
-            
             if !logined {
-                
-                Group{
-                    TextField("Email", text: $email).textFieldStyle(.roundedBorder)
-                    
-                    SecureField("Password", text: $password).textFieldStyle(.roundedBorder)
-                
-                    Button(action: {
-                        Auth.auth().signIn(withEmail: email, password: password) { (result, error) in
-                                    if error != nil {
-                                        
-                                        Auth.auth().createUser(withEmail: email, password: password) { (result, error) in
-                                            if error != nil {
-                                                self.error = error?.localizedDescription ?? "Service Error, try later"
-                                                self.isRestore = true
-                                            } else {
-                                                avatarUrl = result?.user.photoURL ?? avatarUrl
-                                                username = result?.user.displayName ?? ""
-                                                self.error = ""
-                                                logined = true
-                                            }
-                                        }
-                        
-                                    } else {
-                                        avatarUrl = result?.user.photoURL ?? avatarUrl
-                                        username = result?.user.displayName ?? ""
-                                        self.error = ""
-                                        logined = true
-                                    }
-                                }
-                    }) {
-                        Text("Come In")
-                    }.padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(
-                        (email.isEmpty || password.isEmpty) ? .clear : .blue).clipShape(Capsule()).disabled(email.isEmpty || password.isEmpty)
-                    
-                    if isRestore {
-                        Button(action: {
-                            Auth.auth().sendPasswordReset(withEmail: email){ (error) in
-                                if error != nil {
-                                    self.error = error?.localizedDescription ?? "Service Error, try later"
-                                    self.isRestore = true
-                                } else {
-                                    self.error = "Check your postal address please."
-                                    self.isRestore = false
-                                }
-                            }
-                        }) {
-                            Text("Restore Password")
-                        }.padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(
-                            (email.isEmpty || password.isEmpty) ? .clear : .blue).clipShape(Capsule()).disabled(email.isEmpty || password.isEmpty)
+                ProgressView().onAppear{
+                    Auth.auth().signInAnonymously{ (result, error) in
+                        if error != nil {
+                            self.error = error?.localizedDescription ?? "Service Error, Try later."
+                        } else {
+                            avatarUrl = result?.user.photoURL ?? avatarUrl
+                            username = result?.user.displayName ?? ""
+                            self.error = ""
+                            logined = true
+                        }
                     }
-                    
-                }.font(.title2).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25))
+                }
+                
             } else {
               
-                Group{
+                HStack {
                     
                     Button {
                         self.galleryPicker = true
@@ -117,7 +73,7 @@ struct LoginView: View {
                                 content: { image in
                                     image.resizable()
                                          .aspectRatio(contentMode: .fill)
-                                         .frame(maxWidth: 80, maxHeight: 80)
+                                         .frame(maxWidth: 40, maxHeight: 40)
                                 },
                                 placeholder: {
                                     ProgressView()
@@ -129,21 +85,7 @@ struct LoginView: View {
           
                     TextField("Nickname", text: $username).textFieldStyle(.roundedBorder)
                 
-                    Button(action: {
-                        let changeRequest = Auth.auth().currentUser?.createProfileChangeRequest()
-                        changeRequest?.displayName = username
-                        changeRequest?.commitChanges { (error) in
-                            if error != nil {
-                                self.error = error?.localizedDescription ?? "Service Error, try later"
-                            } else {
-                                self.closeBlock?()
-                            }
-                        }
-                    }) {
-                        Text("Start Game!")
-                    }.padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(
-                            (username.isEmpty) ? .clear : .purple).clipShape(Capsule()).disabled(username.isEmpty)
-                    
+                   
                 }.font(.title2).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25))
                 .sheet(isPresented: $galleryPicker) {
                     MediaPicker(
@@ -189,6 +131,38 @@ struct LoginView: View {
                     .mediaSelectionType(.photo)
                     .mediaSelectionStyle(.checkmark)
                 }
+                
+                Group {
+                    Button(action: {
+                        let changeRequest = Auth.auth().currentUser?.createProfileChangeRequest()
+                        changeRequest?.displayName = username
+                        changeRequest?.commitChanges { (error) in
+                            if error != nil {
+                                self.error = error?.localizedDescription ?? "Service Error, try later"
+                            } else {
+                                self.closeBlock?()
+                            }
+                        }
+                    }) {
+                        Text("Enjoy Game!")
+                    }.padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(
+                            (username.isEmpty) ? .clear : .yellow).clipShape(Capsule()).disabled(username.isEmpty)
+                        .font(.title2).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25))
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        try? Auth.auth().signOut()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0){
+                            self.closeBlock?()
+                    }
+                        
+                    }) {
+                        Text("Skip and Play")
+                    }.foregroundColor(.white).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(.gray).clipShape(Capsule())
+                }
+                
+               
             }
             
             Spacer()
@@ -197,12 +171,16 @@ struct LoginView: View {
                 Button(action: {
                     self.closeBlock?()
                 }) {
-                    Text("Continue anonymously")
+                    Text("Skip & Play")
                 }.foregroundColor(.white).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(.gray).clipShape(Capsule())
             }
             
-            Text(hint).font(.footnote).foregroundColor(.gray).padding(25)
-            Link("Login is agree with our Terms & Privacy", destination: URL(string: "https://www.freeprivacypolicy.com/live/7dbd55be-25cb-4427-bcf3-4e432b5ec06a")!)
+            VStack {
+                Text(error).font(.footnote).foregroundColor(.red)
+                Text(hint).font(.footnote).foregroundColor(.gray).padding(25)
+            }
+            
+            Link("Agree with our Terms & Privacy", destination: URL(string: termsUrl ?? "")!)
                 .font(.footnote)
                 .foregroundStyle(.gray)
         }.onDisappear(perform: {
@@ -211,12 +189,11 @@ struct LoginView: View {
         
     }
         
-
 }
 
-struct LoginView_Previews: PreviewProvider {
+struct LeaderView_Previews: PreviewProvider {
     static var previews: some View {
-        LoginView(logo: #imageLiteral(resourceName: "MakeCoins"))
+        LeaderView(logo: #imageLiteral(resourceName: "MakeCoins"))
     }
 }
 

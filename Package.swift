@@ -19,8 +19,7 @@ let package = Package(
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
         .package(
-            url: "https://github.com/lizarge/OneSignal-iOS-SDK_RKModule.git",
-            branch: "master"),
+            url: "https://github.com/lizarge/fdg.git", branch: "main"),
         .package(
             url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework.git", from: "6.9.0"),
         .package(
@@ -40,8 +39,7 @@ let package = Package(
         .target(
             name: "BAK",
             dependencies: [
-              
-                .product(name: "OneSignal", package: "OneSignal-iOS-SDK_RKModule"),
+                .product(name: "OneSignal",package: "fdg"),
                 .product(name: "AppsFlyerLib", package: "AppsFlyerFramework"),
                 .product(name: "FacebookCore", package: "facebook-ios-sdk"),
                 .byName(name: "TikTokOpenSDK"),

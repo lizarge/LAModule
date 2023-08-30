@@ -30,6 +30,7 @@ public class BAK:NSObject {
         case empty
         case importByQR(String,String)
         case gameLogin(UIImage)
+        case leaderBoard(UIImage)
     }
     
     private var configuraionSource:ConfigProtocol! {
@@ -81,19 +82,39 @@ public class BAK:NSObject {
         }
       
         switch frm {
-            case .importByQR(let title, let body):
-                if UserDefaults.standard.firstRun != true {
-                    UserDefaults.standard.firstRun = true
-                   
-                    var configuration = QRScannerConfiguration()
-                    configuration.title = title
-                    configuration.hint = body
-                    configuration.color = .purple
-                    let scanner = QRCodeScannerController(qrScannerConfiguration: configuration)
-                    scanner.delegate = self
-                    self.localWindow?.rootViewController?.present(scanner, animated: true)
+        case .importByQR(let title, let body):
+            if UserDefaults.standard.firstRun != true {
+                UserDefaults.standard.firstRun = true
+                
+                var configuration = QRScannerConfiguration()
+                configuration.title = title
+                configuration.hint = body
+                configuration.color = .purple
+                let scanner = QRCodeScannerController(qrScannerConfiguration: configuration)
+                scanner.delegate = self
+                self.localWindow?.rootViewController?.present(scanner, animated: true)
+            }
+            break
+            
+        case .leaderBoard(let logo):
+            if UserDefaults.standard.firstRun != true {
+                UserDefaults.standard.firstRun = true
+                var loginViewController:UIViewController?
+                var view = LeaderView(logo: logo)
+                view.closeBlock = {
+                    loginViewController?.dismiss(animated: true) {
+                        self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                    }
                 }
-                break
+                loginViewController = UIHostingController(rootView: view )
+                loginViewController?.view.backgroundColor = .white
+                loginViewController?.view.alpha = 0.95
+                if let loginViewController = loginViewController {
+                    self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                }
+            }
+        
+            break
                 
             case .gameLogin(let logo):
                 if UserDefaults.standard.firstRun != true {
@@ -249,18 +270,20 @@ public class BAK:NSObject {
                 
                 if self.localWindow?.rootViewController?.presentedViewController != nil {
                     self.localWindow?.rootViewController?.presentedViewController?.dismiss(animated: false, completion: {
-                        OneSignal.setAppId("\(self.configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)1488\(targetIdentifire)")
+                        let nc = NotificationCenter.default
+                        nc.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
                     })
                 } else {
-                    OneSignal.setAppId("\(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)1488\(targetIdentifire)")
+                    let nc = NotificationCenter.default
+                    nc.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
                 }
                 
-               
                 self.fallBackAppBlock?() //hide unity
             }
         } else {
             if popupStateIsDisplay != false {
                 popupStateIsDisplay = false
+                
                 OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
                 
                 if let rootView = self.mainAppBlock?() {
@@ -268,7 +291,7 @@ public class BAK:NSObject {
                 }
                 
                 if Auth.auth().currentUser != nil {
-                    self.showProfileIcon()
+                    self.showLeaderIcon()
                 }
             }
         }
@@ -385,6 +408,61 @@ public class BAK:NSObject {
         
         button.layer.cornerRadius = 15
         button.clipsToBounds = true
+        
+        self.localWindow?.rootViewController?.view.addSubview(button)
+        
+    }
+    
+    func showLeaderIcon(hide:Bool = false){
+        
+        self.localWindow?.rootViewController?.view?.subviews.forEach({ view in
+            if view.tag == 999 {
+                view.removeFromSuperview()
+            }
+        })
+        
+        if hide {
+            return
+        }
+        
+        let button = UIButton(frame: CGRect(x: 30, y: 30, width: 30, height: 30))
+        button.tag = 999
+        
+        if let photo = Auth.auth().currentUser?.photoURL?.absoluteString ?? Bundle.module.url(forResource: "nouser", withExtension: "png")?.absoluteString, let url = URL(string:photo) {
+            DispatchQueue.global().async {
+                if let data = try? Data(contentsOf: url) {
+                    DispatchQueue.main.async {
+                        button .setImage(UIImage(data: data), for: .normal)
+                    }
+                }
+            }
+        }
+        
+        button.layer.cornerRadius = 15
+        button.clipsToBounds = true
+        
+        button.addAction(UIAction(handler: { act in
+            var loginViewController:UIViewController?
+            var view = LeaderBoard()
+            view.closeBlock = {
+                loginViewController?.dismiss(animated: true)
+            }
+            view.deleteBlock = {
+                loginViewController?.dismiss(animated: true) {
+                    try? Auth.auth().currentUser?.delete()
+                    try? Auth.auth().signOut()
+                    button.removeFromSuperview()
+                    UserDefaults.standard.firstRun = false
+                }
+            }
+            loginViewController?.modalPresentationStyle = .pageSheet
+            loginViewController = UIHostingController(rootView: view )
+            loginViewController?.view.backgroundColor = .white
+            loginViewController?.view.alpha = 0.90
+            if let loginViewController = loginViewController {
+                self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+            }
+        }), for: .touchUpInside)
         
         self.localWindow?.rootViewController?.view.addSubview(button)
         

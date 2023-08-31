@@ -25,7 +25,7 @@ let package = Package(
         .package(
             url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework.git", from: "6.9.0"),
         .package(
-            url: "https://github.com/facebook/facebook-ios-sdk.git", from: "9.0.0"),
+            url: "https://github.com/facebook/facebook-ios-sdk.git", branch: "main"),
         .package(
             url: "https://github.com/qasim/TikTokOpenSDK.git", from: "5.0.0"),
         .package(

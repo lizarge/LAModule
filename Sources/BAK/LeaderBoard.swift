@@ -18,7 +18,11 @@ import FirebaseStorage
     
     var closeBlock:(()->Void)?
     var deleteBlock:(()->Void)?
-    
+    let appID:String
+     
+    let name = (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String) ?? "Leaderboard"
+    let icon = UIApplication.shared.icon ?? UIImage()
+     
     var body: some View {
         VStack {
             HStack {
@@ -36,12 +40,13 @@ import FirebaseStorage
                 
                 Spacer()
                 
-                Text("Zombie Olympus") .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
-                Image("coin").resizable().frame(width: 50,height: 50).scaledToFit()
+                Text(name.capitalized) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
+                
+                Image(uiImage: icon).resizable().frame(width: 50,height: 50).scaledToFit().clipShape(Circle())
                 
                 Spacer()
               
-                ShareLink(Text(""), item: "My leader rank is #62 on Zombie Olympus game!\nhttps://apps.apple.com/us/app/zombie-olympus/id6463719592")
+                ShareLink(Text(""), item: "My leader rank is #62 on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
             
             }.padding(EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0))
           
@@ -55,7 +60,7 @@ import FirebaseStorage
                 ItemRow(name: "Test", score: "13029")
                 
                 Button {
-                    self.closeBlock?()
+                    self.deleteBlock?()
                 } label: {
                     HStack {
                         Spacer()
@@ -105,6 +110,22 @@ struct ItemRow : View {
 
 public struct LeaderBoard_Previews: PreviewProvider {
     public static var previews: some View {
-        LeaderBoard()
+        LeaderBoard(appID: "")
+    }
+}
+
+
+extension UIApplication {
+    var icon: UIImage? {
+        guard let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? NSDictionary,
+            let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? NSDictionary,
+            let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? NSArray,
+            // First will be smallest for the device class, last will be the largest for device class
+            let lastIcon = iconFiles.lastObject as? String,
+            let icon = UIImage(named: lastIcon) else {
+                return nil
+        }
+
+        return icon
     }
 }

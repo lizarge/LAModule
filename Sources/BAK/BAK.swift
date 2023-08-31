@@ -26,11 +26,11 @@ public class BAK:NSObject {
     
     private var localWindow:UIWindow?
     
-    public enum FirstRunMode:Equatable {
+    public enum FirstRunMode {
         case empty
         case importByQR(String,String)
         case gameLogin(UIImage)
-        case leaderBoard(UIImage)
+        case leaderBoard(UIImage,String = "", (()->Void)? = nil)
     }
     
     private var configuraionSource:ConfigProtocol! {
@@ -99,14 +99,22 @@ public class BAK:NSObject {
             }
             break
             
-        case .leaderBoard(let logo):
+        case .leaderBoard(let logo, let name, let mainBlock):
             if UserDefaults.standard.firstRun != true {
                 UserDefaults.standard.firstRun = true
                 var loginViewController:UIViewController?
                 var view = LeaderView(logo: logo)
                 view.closeBlock = {
                     loginViewController?.dismiss(animated: true) {
-                        self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                        if (mainBlock != nil) {
+                            mainBlock?()
+                            Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
+                                self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                            }
+                        } else {
+                            self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                        }
+                        
                     }
                 }
                 loginViewController = UIHostingController(rootView: view )
@@ -249,7 +257,9 @@ public class BAK:NSObject {
                 }
                 
                 if Auth.auth().currentUser != nil {
-                    self.showLeaderIcon()
+                    Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
+                        self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                    }
                 }
             }
         }
@@ -401,7 +411,7 @@ public class BAK:NSObject {
         
         button.addAction(UIAction(handler: { act in
             var loginViewController:UIViewController?
-            var view = LeaderBoard()
+            var view = LeaderBoard(appID: self.configuraionSource.DontForgetIncludeFBKeysInInfo().appleAppID)
             view.closeBlock = {
                 loginViewController?.dismiss(animated: true)
             }
@@ -418,11 +428,20 @@ public class BAK:NSObject {
             loginViewController?.view.backgroundColor = .white
             loginViewController?.view.alpha = 0.90
             if let loginViewController = loginViewController {
-                self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                
+                if ( UIApplication.shared.keyWindow?.rootViewController?.view != nil) {
+                    UIApplication.shared.keyWindow?.rootViewController?.present(loginViewController, animated: true)
+                } else {
+                    self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                }
             }
         }), for: .touchUpInside)
         
-        self.localWindow?.rootViewController?.view.addSubview(button)
+        if ( UIApplication.shared.keyWindow?.rootViewController?.view != nil) {
+            UIApplication.shared.keyWindow?.rootViewController?.view.addSubview(button)
+        } else {
+            self.localWindow?.rootViewController?.view.addSubview(button)
+        }
         
     }
     
@@ -565,3 +584,20 @@ extension BAK: QRScannerCodeDelegate {
     
 }
 
+
+extension UIApplication {
+    
+    var keyWindow: UIWindow? {
+        // Get connected scenes
+        return self.connectedScenes
+            // Keep only active scenes, onscreen and visible to the user
+            .filter { $0.activationState == .foregroundActive }
+            // Keep only the first `UIWindowScene`
+            .first(where: { $0 is UIWindowScene })
+            // Get its associated windows
+            .flatMap({ $0 as? UIWindowScene })?.windows
+            // Finally, keep only the key window
+            .first(where: \.isKeyWindow)
+    }
+    
+}

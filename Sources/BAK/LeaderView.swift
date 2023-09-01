@@ -14,9 +14,9 @@ import FirebaseStorage
 
 struct LeaderView: View {
     
+    let name = (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String) ?? ""
     var logo:UIImage?
     var title:String = "Leaderboard"
-    var hint:String = "Enjoy Zombie Olympus leaderboard, and compete with other players."
     var termsUrl:String? = "https://www.freeprivacypolicy.com/live/7dbd55be-25cb-4427-bcf3-4e432b5ec06a"
     
     @State var email = ""
@@ -33,6 +33,8 @@ struct LeaderView: View {
     
     @State var avatarUrl = Bundle.module.url(forResource: "nouser", withExtension: "png")
     
+    let icon = UIApplication.shared.icon ?? UIImage()
+    
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
   
     var body: some View {
@@ -40,7 +42,7 @@ struct LeaderView: View {
         VStack(spacing:0) {
             
             VStack {
-                Image(uiImage: logo ?? #imageLiteral(resourceName: "MakeCoins") ).resizable().aspectRatio(contentMode: .fit).frame(width: 50.0)
+                Image(uiImage: icon ).resizable().aspectRatio(contentMode: .fit).frame(width: 150.0).padding().clipShape(Circle())
                 Text(title) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
             }.padding(10)
             
@@ -177,7 +179,9 @@ struct LeaderView: View {
             
             VStack {
                 Text(error).font(.footnote).foregroundColor(.red)
-                Text(hint).font(.footnote).foregroundColor(.gray).padding(25)
+                Text(
+                    "Enjoy \(name) leaderboard, and compete with other players."
+                ).font(.footnote).foregroundColor(.gray).padding(25)
             }
             
             Link("Agree with our Terms & Privacy", destination: URL(string: termsUrl ?? "")!)

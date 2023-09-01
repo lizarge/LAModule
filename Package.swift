@@ -44,6 +44,7 @@ let package = Package(
                 .product(name: "OneSignal",package: "fdg"),
                 .product(name: "AppsFlyerLib", package: "AppsFlyerFramework"),
                 .product(name: "FacebookCore", package: "facebook-ios-sdk"),
+                .product(name: "FBSDKGamingServicesKit", package: "facebook-ios-sdk"),
                 .byName(name: "TikTokOpenSDK"),
                 .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),

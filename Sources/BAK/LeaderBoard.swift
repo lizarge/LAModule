@@ -46,18 +46,18 @@ import FirebaseStorage
                 
                 Spacer()
               
-                ShareLink(Text(""), item: "My leader rank is #62 on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
+                ShareLink(Text(""), item: "My leader rank is #11 on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
             
             }.padding(EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0))
           
             List{
-                ItemRow(name: "Sasha", score: "52243")
-                ItemRow(name: "777hulu", score: "43233",avatarUrl: URL(string: "https://www.kasandbox.org/programming-images/avatars/mr-pants-purple.png")!)
-                ItemRow(name: "QWE", score: "40874",
-                        avatarUrl: URL(string: "https://pixabay.com/images/download/people-2944065_640.jpg?attachment")!
+                ItemRow(name: "Unknown", score: "532243",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a042581f4se290267204d")!)
+                ItemRow(name: "bob", score: "423233",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a04f2581f4e290267204d")!)
+                ItemRow(name: "test", score: "420874",
+                        avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a042581f4e29s0262704d")!
                         )
-                ItemRow(name: "elcap", score: "19629")
-                ItemRow(name: "Test", score: "13029")
+                ItemRow(name: "test", score: "119629",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a042581f4edd290267204d")!)
+                ItemRow(name: "Test", score: "113029")
                 
                 Button {
                     self.deleteBlock?()

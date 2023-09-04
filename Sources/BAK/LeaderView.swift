@@ -15,9 +15,8 @@ import FirebaseStorage
 struct LeaderView: View {
     
     let name = (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String) ?? ""
-    var logo:UIImage?
     var title:String = "Leaderboard"
-    var termsUrl:String? = "https://www.freeprivacypolicy.com/live/7dbd55be-25cb-4427-bcf3-4e432b5ec06a"
+    var termsUrl:String
     
     @State var email = ""
     @State var password = ""

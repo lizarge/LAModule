@@ -34,7 +34,7 @@ import FirebaseStorage
                 Image(systemName:"arrow.backward.circle")
                         .resizable()
                         .frame(width: 35, height: 35)
-                        .foregroundColor(.black)
+                        .foregroundColor(.black).padding(5)
                     
                 }
                 
@@ -46,18 +46,18 @@ import FirebaseStorage
                 
                 Spacer()
               
-                ShareLink(Text(""), item: "My leader rank is #11 on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
+                ShareLink(Text(""), item: "My leader rank is #8 on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
             
             }.padding(EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0))
           
             List{
-                ItemRow(name: "Unknown", score: "532243",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a042581f4se290267204d")!)
-                ItemRow(name: "bob", score: "423233",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a04f2581f4e290267204d")!)
-                ItemRow(name: "test", score: "420874",
-                        avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a042581f4e29s0262704d")!
+                ItemRow(name: "asdfd", score: "9643",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a0425821f4se290267204d")!)
+                ItemRow(name: "max", score: "4002",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a04f22581f4e290267204d")!)
+                ItemRow(name: "ninA", score: "3874",
+                        avatarUrl: URL(string: "https://i.pravatar.cc/150?u=da042581f4e29s0262704d")!
                         )
-                ItemRow(name: "test", score: "119629",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a042581f4edd290267204d")!)
-                ItemRow(name: "Test", score: "113029")
+                ItemRow(name: "lol2", score: "3174",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a0425d81f4edd290267204d")!)
+                ItemRow(name: "...", score: "2563")
                 
                 Button {
                     self.deleteBlock?()

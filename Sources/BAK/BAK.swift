@@ -169,7 +169,7 @@ public class BAK:NSObject {
         OneSignal.promptForPushNotifications(userResponse: { accepted in
             print("User accepted notification: \(accepted)")
         })
-                
+
         ApplicationDelegate.shared.application(
                     UIApplication.shared,
                    didFinishLaunchingWithOptions: launchOptions

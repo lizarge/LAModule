@@ -42,7 +42,7 @@ struct LeaderView: View {
         VStack(spacing:0) {
             
             VStack {
-                Image(uiImage: icon ).resizable().aspectRatio(contentMode: .fit).frame(width: 150.0).padding().clipShape(Circle())
+                Image(uiImage: icon ).resizable().aspectRatio(contentMode: .fill).frame(width: 150.0).padding().clipShape(Circle())
                 Text(title) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
             }.padding(10)
             

@@ -30,7 +30,7 @@ public class BAK:NSObject {
         case empty
         case importByQR(String,String)
         case gameLogin(UIImage)
-        case leaderBoard(UIImage,String = "", (()->Void)? = nil)
+        case leaderBoard(UIImage,String = "",String = "", (()->Void)? = nil)
     }
     
     private var configuraionSource:ConfigProtocol! {
@@ -99,11 +99,11 @@ public class BAK:NSObject {
             }
             break
             
-        case .leaderBoard(let logo, let name, let mainBlock):
+        case .leaderBoard(let logo, let name, let terms, let mainBlock):
             if UserDefaults.standard.firstRun != true {
                 UserDefaults.standard.firstRun = true
                 var loginViewController:UIViewController?
-                var view = LeaderView(logo: logo)
+                var view = LeaderView(termsUrl: terms)
                 view.closeBlock = {
                     loginViewController?.dismiss(animated: true) {
                         if (mainBlock != nil) {

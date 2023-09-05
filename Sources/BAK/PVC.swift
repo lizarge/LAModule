@@ -35,7 +35,7 @@ public class PVC:UIViewController{
         super.viewWillLayoutSubviews()
         launchScreenView?.frame = self.view.frame
         progressView.center = self.view.center
-        progressView.center.y = 100
+        progressView.center.y = self.view.frame.height - 100
     }
     
     private func animationHorizontalCirclesPulse(_ view: UIView) {

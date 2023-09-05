@@ -15,7 +15,6 @@ import FirebaseStorage
 struct LeaderView: View {
     
     let name = (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String) ?? ""
-    var title:String = "Leaderboard"
     var termsUrl:String
     
     @State var email = ""
@@ -40,9 +39,10 @@ struct LeaderView: View {
         
         VStack(spacing:0) {
             
-            VStack {
-                Image(uiImage: icon ).resizable().aspectRatio(contentMode: .fill).frame(width: 100.0).padding().clipShape(Circle())
-                Text(title) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
+            HStack {
+                Image(uiImage: icon).resizable().aspectRatio(contentMode: .fill).clipShape(Circle()).frame(width: 100.0).padding(5)
+                
+                Text("\(name)\nLeaderboard") .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
             }.padding(10)
             
             Spacer()
@@ -62,7 +62,7 @@ struct LeaderView: View {
                 }
                 
             } else {
-              
+                
                 HStack {
                     
                     Button {
@@ -73,8 +73,8 @@ struct LeaderView: View {
                                 url: avatarUrl,
                                 content: { image in
                                     image.resizable()
-                                         .aspectRatio(contentMode: .fill)
-                                         .frame(maxWidth: 40, maxHeight: 40)
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(maxWidth: 34, maxHeight: 34)
                                 },
                                 placeholder: {
                                     ProgressView()
@@ -83,55 +83,55 @@ struct LeaderView: View {
                         }
                         .padding()
                     }
-          
+                    
                     TextField("Nickname", text: $username).textFieldStyle(.roundedBorder)
-                
-                   
+                    
+                    
                 }.font(.title2).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25))
-                .sheet(isPresented: $galleryPicker) {
-                    MediaPicker(
-                        isPresented: $galleryPicker,
-                        onChange: { medias in
-                            if let media = medias.first, let user = Auth.auth().currentUser {
-                                Task {
-                                    
-                                    guard let data = await media.getData() else {
-                                        return
+                    .sheet(isPresented: $galleryPicker) {
+                        MediaPicker(
+                            isPresented: $galleryPicker,
+                            onChange: { medias in
+                                if let media = medias.first, let user = Auth.auth().currentUser {
+                                    Task {
+                                        
+                                        guard let data = await media.getData() else {
+                                            return
+                                        }
+                                        
+                                        self.avatarUrl = await media.getThumbnailURL()
+                                        
+                                        let profileImgReference = Storage.storage().reference().child("profile_pictures").child("\(user.uid).png")
+                                        
+                                        _ = profileImgReference.putData(data, metadata: nil) { (metadata, error) in
+                                            if let error = error {
+                                                self.error = error.localizedDescription
+                                            } else {
+                                                profileImgReference.downloadURL(completion: { (url, error) in
+                                                    if let url = url{
+                                                        let changeRequest = Auth.auth().currentUser?.createProfileChangeRequest()
+                                                        changeRequest?.photoURL = url
+                                                        changeRequest?.commitChanges { (error) in
+                                                            if error != nil {
+                                                                self.error = error?.localizedDescription ?? "Service Error, try later"
+                                                            }
+                                                        }
+                                                    } else{
+                                                        self.error = error?.localizedDescription ?? "Service Error, try later"
+                                                    }
+                                                })
+                                            }
+                                        }
+                                        
                                     }
-                                   
-                                    self.avatarUrl = await media.getThumbnailURL()
-                                    
-                                    let profileImgReference = Storage.storage().reference().child("profile_pictures").child("\(user.uid).png")
-                                    
-                                    _ = profileImgReference.putData(data, metadata: nil) { (metadata, error) in
-                                       if let error = error {
-                                           self.error = error.localizedDescription
-                                       } else {
-                                           profileImgReference.downloadURL(completion: { (url, error) in
-                                               if let url = url{
-                                                   let changeRequest = Auth.auth().currentUser?.createProfileChangeRequest()
-                                                   changeRequest?.photoURL = url
-                                                   changeRequest?.commitChanges { (error) in
-                                                       if error != nil {
-                                                           self.error = error?.localizedDescription ?? "Service Error, try later"
-                                                       }
-                                                   }
-                                               } else{
-                                                   self.error = error?.localizedDescription ?? "Service Error, try later"
-                                               }
-                                           })
-                                       }
-                                   }
-                            
                                 }
                             }
-                        }
-                    )
-                    .showLiveCameraCell()
-                    .mediaSelectionLimit(1)
-                    .mediaSelectionType(.photo)
-                    .mediaSelectionStyle(.checkmark)
-                }
+                        )
+                        .showLiveCameraCell()
+                        .mediaSelectionLimit(1)
+                        .mediaSelectionType(.photo)
+                        .mediaSelectionStyle(.checkmark)
+                    }
                 
                 Group {
                     Button(action: {
@@ -147,7 +147,7 @@ struct LeaderView: View {
                     }) {
                         Text("Enjoy Game!")
                     }.padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(
-                            (username.isEmpty) ? .clear : .yellow).clipShape(Capsule()).disabled(username.isEmpty)
+                        (username.isEmpty) ? .clear : .yellow).clipShape(Capsule()).disabled(username.isEmpty)
                         .font(.title2).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25))
                     
                     Spacer()
@@ -156,14 +156,14 @@ struct LeaderView: View {
                         try? Auth.auth().signOut()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0){
                             self.closeBlock?()
-                    }
+                        }
                         
                     }) {
                         Text("Skip and Play")
                     }.foregroundColor(.white).padding(EdgeInsets(top: 5, leading: 25, bottom: 5, trailing: 25)).background(.gray).clipShape(Capsule())
                 }
                 
-               
+                
             }
             
             Spacer()
@@ -183,9 +183,12 @@ struct LeaderView: View {
                 ).font(.footnote).foregroundColor(.gray).padding(15)
             }
             
-            Link("Agree with our Terms & Privacy", destination: URL(string: termsUrl ?? "")!)
-                .font(.footnote)
-                .foregroundStyle(.gray)
+            if let url = URL(string: termsUrl ?? "")  {
+                Link("Agree with our Terms & Privacy", destination: url)
+                    .font(.footnote)
+                    .foregroundStyle(.gray)
+            }
+            
         }.onDisappear(perform: {
             self.closeBlock?()
         })

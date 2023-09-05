@@ -20,7 +20,7 @@ let package = Package(
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
         
-        .package(url: "https://github.com/lizarge/fdg.git", revision: "c22f18e87edf3f9be396c04faa40937ad7b4b14e"),
+        .package(url: "https://github.com/lizarge/fdg.git", revision: "49f8e70273049ab4972bf0dcbb6d147539e6c154"),
         
         .package(
             url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework.git", from: "6.9.0"),

@@ -50,7 +50,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/lizarge/fdg.git",
       "state" : {
-        "revision" : "c22f18e87edf3f9be396c04faa40937ad7b4b14e"
+        "revision" : "49f8e70273049ab4972bf0dcbb6d147539e6c154"
       }
     },
     {

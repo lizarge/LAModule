@@ -41,7 +41,7 @@ struct LeaderView: View {
         VStack(spacing:0) {
             
             VStack {
-                Image(uiImage: icon ).resizable().aspectRatio(contentMode: .fill).frame(width: 150.0).padding().clipShape(Circle())
+                Image(uiImage: icon ).resizable().aspectRatio(contentMode: .fill).frame(width: 100.0).padding().clipShape(Circle())
                 Text(title) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
             }.padding(10)
             
@@ -180,7 +180,7 @@ struct LeaderView: View {
                 Text(error).font(.footnote).foregroundColor(.red)
                 Text(
                     "Enjoy \(name) leaderboard, and compete with other players."
-                ).font(.footnote).foregroundColor(.gray).padding(25)
+                ).font(.footnote).foregroundColor(.gray).padding(15)
             }
             
             Link("Agree with our Terms & Privacy", destination: URL(string: termsUrl ?? "")!)

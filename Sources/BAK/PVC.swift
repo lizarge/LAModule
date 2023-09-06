@@ -14,6 +14,8 @@ public class PVC:UIViewController{
     private var hostingView:UIViewController?
     private var launchScreenView:UIView?
     
+    public var clakOrientationMask:UIInterfaceOrientationMask?
+    
     public override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -33,9 +35,29 @@ public class PVC:UIViewController{
     
     public override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
+        
         launchScreenView?.frame = self.view.frame
+        hostingView?.view.frame  = self.view.frame
         progressView.center = self.view.center
         progressView.center.y = self.view.frame.height - 100
+        
+        if let clakOrientationMask = clakOrientationMask {
+            (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations: clakOrientationMask))
+        }
+        
+    }
+    
+    override public func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        launchScreenView?.frame = self.view.frame
+        hostingView?.view.frame  = self.view.frame
+        progressView.center = self.view.center
+        progressView.center.y = self.view.frame.height - 100
+        
+        if let clakOrientationMask = clakOrientationMask {
+            (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations: clakOrientationMask))
+        }
     }
     
     private func animationHorizontalCirclesPulse(_ view: UIView) {

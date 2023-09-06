@@ -27,6 +27,8 @@ public class BAK:NSObject {
     
     private var firstRunMode:FirstRunMode = .empty
     
+    private var clakOrientationMask:UIInterfaceOrientationMask = .all
+    
     public enum FirstRunMode {
         case empty
         case importByQR(String,String)
@@ -60,10 +62,13 @@ public class BAK:NSObject {
     }
     
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, _ firstRunMode:FirstRunMode = .empty, configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, _ firstRunMode:FirstRunMode = .empty,
+                               appOrientation:UIInterfaceOrientationMask = .all,
+                               configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
         
         self.firstRunMode = firstRunMode
-        
+        self.clakOrientationMask = appOrientation
+       
         self.showInitializationView(window: &window)
         self.configuraionSource = configuration
         self.localWindow = window
@@ -80,6 +85,7 @@ public class BAK:NSObject {
             popupStateIsDisplay = false
             
             if let rootView = self.mainAppBlock?() {
+                self.hostView.clakOrientationMask = self.clakOrientationMask
                 self.hostView.showSwiftUI(view: rootView)
             }
             
@@ -198,6 +204,8 @@ public class BAK:NSObject {
                 if popupStateIsDisplay != true {
                     popupStateIsDisplay = true
                     
+                   // (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations:.all))
+                    
                     self.hostView.hideSwiftUI()
                     
                     if self.localWindow?.rootViewController?.presentedViewController != nil {
@@ -238,7 +246,10 @@ public class BAK:NSObject {
                             loginViewController?.view.backgroundColor = .white
                             loginViewController?.view.alpha = 0.95
                             if let loginViewController = loginViewController {
-                                self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                                (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations:  self.clakOrientationMask))
+                                Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { _ in
+                                    self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                                }
                             }
                         }
                     
@@ -248,11 +259,15 @@ public class BAK:NSObject {
                             break
                     }
                     
-                    
+                    hostView.clakOrientationMask = self.clakOrientationMask
+                  
                     if let rootView = self.mainAppBlock?() {
+                        self.localWindow?.rootViewController?.dismiss(animated: true)
                         self.hostView.showSwiftUI(view: rootView)
                     }
-                    
+      
+                    (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations:self.clakOrientationMask))
+                   
                     if Auth.auth().currentUser != nil {
                         Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
                             self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
@@ -267,7 +282,7 @@ public class BAK:NSObject {
                 Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
                 
                 guard let strongSelf = self, error == nil else {
-                    Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
+                    Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { _ in
                         self?.processMagic(close: close, fetch: fetch)
                     }
                     return

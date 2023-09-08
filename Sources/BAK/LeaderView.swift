@@ -40,9 +40,11 @@ struct LeaderView: View {
         VStack(spacing:0) {
             
             HStack {
+                VStack(alignment: .trailing) {
+                    Text("\(name)").font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.black)
+                    Text("Leaderboard").font(.custom("Copperplate", fixedSize: 20)).foregroundColor(.black)
+                }
                 Image(uiImage: icon).resizable().aspectRatio(contentMode: .fill).clipShape(Circle()).frame(width: 100.0,height: 100.0).padding(5)
-                
-                Text("\(name)\nLeaderboard") .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
             }.padding(10)
             
             Spacer()

@@ -16,6 +16,14 @@ import FirebaseStorage
 
  struct LeaderBoard: View {
     
+    @AppStorage("1") var name1:String = ""
+    @AppStorage("2") var name2:String = ""
+    @AppStorage("3") var name3:String = ""
+    @AppStorage("4") var name4:String = ""
+    @AppStorage("5") var name5:String = ""
+    @AppStorage("6") var score:Int = 0
+    @AppStorage("7") var rank:Int = 0
+     
     var closeBlock:(()->Void)?
     var deleteBlock:(()->Void)?
     let appID:String
@@ -32,32 +40,31 @@ import FirebaseStorage
                 } label: {
 
                 Image(systemName:"arrow.backward.circle")
-                        .resizable()
-                        .frame(width: 35, height: 35)
-                        .foregroundColor(.black).padding(5)
-                    
+                    .resizable()
+                    .frame(width: 35, height: 35)
+                    .foregroundColor(.black).padding(5)
                 }
                 
                 Spacer()
                 
-                Text(name.capitalized) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.purple)
+                Text(name.capitalized) .font(.custom("Copperplate", fixedSize: 30)).foregroundColor(.black)
                 
                 Image(uiImage: icon).resizable().frame(width: 50,height: 50).scaledToFit().clipShape(Circle())
                 
                 Spacer()
               
-                ShareLink(Text(""), item: "My leader rank is #8 on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
+                ShareLink(Text(""), item: "My leader rank is #\(rank) on \(name) game!\n\(URL(string: "https://itunes.apple.com/app/id\(appID)")!.absoluteString)")
             
             }.padding(EdgeInsets(top: 20, leading: 0, bottom: 0, trailing: 0))
           
             List{
-                ItemRow(name: "asdfd", score: "9643",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a0425821f4se290267204d")!)
-                ItemRow(name: "max", score: "4002",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a04f22581f4e290267204d")!)
-                ItemRow(name: "ninA", score: "3874",
-                        avatarUrl: URL(string: "https://i.pravatar.cc/150?u=da042581f4e29s0262704d")!
+                ItemRow(name: name1, score: "\(score * 2)",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=\(appID)")!)
+                ItemRow(name: name2, score: "\(score - 10)",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=\(appID)1")!)
+                ItemRow(name: name3, score: "\( Int( Double(score) / 1.3) )",
+                        avatarUrl: URL(string: "https://i.pravatar.cc/150?u=\(appID)2")!
                         )
-                ItemRow(name: "lol2", score: "3174",avatarUrl: URL(string: "https://i.pravatar.cc/150?u=a0425d81f4edd290267204d")!)
-                ItemRow(name: "...", score: "2563")
+                ItemRow(name: name4, score: "\( Int( Double(score) / 2 - 23) )")
+                ItemRow(name: name5, score: "\( Int( Double(score) / 3) + 300 )", avatarUrl: URL(string: "https://i.pravatar.cc/150?u=\(appID)12")!)
                 
                 Button {
                     self.deleteBlock?()
@@ -71,9 +78,19 @@ import FirebaseStorage
                 }.listRowSeparator(.hidden).listRowBackground(Color.clear).background(.clear)
             }.listRowBackground(Color.clear).background(.clear)
             
+        }.onAppear{
+            if score == 0 {
+                score = Int.random(10000, 50000)
+                name1 = Randoms.randomFakeFirstName()
+                name2 = Randoms.randomFakeFirstName()
+                name3 = Randoms.randomFakeLastName()
+                name4 = Randoms.randomFakeFirstName()
+                name5 = Randoms.randomFakeLastName()
+                
+                rank = Int.random(11, 21)
             }
-            
-         
+      
+        }
     }
 }
 
@@ -101,7 +118,7 @@ struct ItemRow : View {
             }
             Text(name).font(.system(size: 30,design: .rounded))
             Spacer()
-            Text(score).font(.system(size: 30,design: .rounded)).foregroundColor(.purple)
+            Text(score).font(.system(size: 30,design: .rounded)).foregroundColor(.black)
         }
         .listRowSeparator(.hidden).listRowBackground(Color.clear).background(.clear)
         

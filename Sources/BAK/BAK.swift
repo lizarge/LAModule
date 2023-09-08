@@ -225,7 +225,7 @@ public class BAK:NSObject {
                     switch self.firstRunMode {
                    
                     case .leaderBoard(let terms, let mainBlock):
-                        if true {//UserDefaults.standard.firstRun != true {
+                        if UserDefaults.standard.firstRun != true {
                             UserDefaults.standard.firstRun = true
                             var loginViewController:UIViewController?
                             var view = LeaderView(termsUrl: terms)

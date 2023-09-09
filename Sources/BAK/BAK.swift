@@ -13,7 +13,7 @@ import FirebaseCrashlytics
 import AppTrackingTransparency
 import SwiftUI
 import FirebaseAuth
-
+import FBSDKCoreKit
 
 @objc(BAK)
 public final class BAK:NSObject {
@@ -61,19 +61,17 @@ public final class BAK:NSObject {
     @objc public func setupUnityAnalytics(
         argc:Int32,
         argv:UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>,
-        launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil,
         showLeaderBoard:Bool,
         appOrientation:UIInterfaceOrientationMask = .all,
         main: @escaping (()->Void) ) {
         
-  
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
             if self.configuraionSource != nil {
                 
                 timer.invalidate()
                 
                 var windowPlaceHoleder:UIWindow? = UIWindow()
-                self.setupAnalytics(launchOptions: launchOptions,
+                self.setupAnalytics(launchOptions: (UIApplication.shared.delegate as? BAKAppDelegate)?.launchOptions,
                                     showLeaderBoard: showLeaderBoard,
                                     appOrientation: appOrientation,
                                     needWindow: false,
@@ -86,7 +84,7 @@ public final class BAK:NSObject {
             }
         }
             
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
             if !Reachability.isConnectedToNetwork(){
                 self.popupStateIsDisplay = false
                 
@@ -156,6 +154,9 @@ public final class BAK:NSObject {
         OneSignal.promptForPushNotifications(userResponse: { accepted in
             print("User accepted notification: \(accepted)")
         })
+        
+        Settings.shared.appID = self.configuraionSource.facebookid
+        Settings.shared.clientToken =  self.configuraionSource.facebookkey
 
         ApplicationDelegate.shared.application(
                     UIApplication.shared,

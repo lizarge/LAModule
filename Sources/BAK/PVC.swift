@@ -19,16 +19,20 @@ public class PVC:UIViewController{
     public override func viewDidLoad() {
         super.viewDidLoad()
 
-        let storyboard = UIStoryboard(name: "LaunchScreen", bundle: nil)
-        if let vc = storyboard.instantiateInitialViewController() {
-            self.addChild(vc)
-            self.view.addSubview(vc.view)
-            self.launchScreenView = vc.view
+        if let storyboardname = (Bundle.main.infoDictionary?["UILaunchStoryboardName"] as? String),
+            Bundle.main.path(forResource: storyboardname, ofType: nil) != nil
+        {
+            let storyboard = UIStoryboard(name: storyboardname, bundle: nil)
+            if let vc = storyboard.instantiateInitialViewController() {
+                self.addChild(vc)
+                self.view.addSubview(vc.view)
+                self.launchScreenView = vc.view
+            }
         }
         
         self.view.addSubview(progressView)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.animationMultipleCirclePulse(self.progressView);
         }
     }

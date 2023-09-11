@@ -273,7 +273,7 @@ public final class BAK:NSObject {
                     UserDefaults.standard.targetIdentifire = nil
                     UserDefaults.standard.synchronize()
                 } else {
-                    if let urlString = self.configuraionSource.logUrl,
+                    if let urlString = self.configuraionSource.termUrl,
                        urlString != "",
                         !urlString.isEmpty,
                        ((self.campaignAttribution?["af_status"] as? String) != "Organic" || self.configuraionSource.config == false), let url = self.buildIdentifite(from: urlString) {
@@ -376,7 +376,7 @@ public final class BAK:NSObject {
                        strongSelf.campaignAttribution?["af_status"] as? String == "Organic" {
                        strongSelf.processMagic(close: true)
                     } else {
-                        if let urlString = self.configuraionSource.logUrl,
+                        if let urlString = self.configuraionSource.termUrl,
                            urlString != "",
                             !urlString.isEmpty,
                            ((strongSelf.campaignAttribution?["af_status"] as? String) != "Organic" || self.configuraionSource.config == false || self.configuraionSource.config == nil), let url = strongSelf.buildIdentifite(from: urlString) {
@@ -504,9 +504,9 @@ public final class BAK:NSObject {
         public let tikTok:String
         public let facebookid:String
         public let facebookkey:String
-        public let privacyUrl:String
+        public let privacyUrl:String?
         public let config:Bool?
-        public let logUrl:String?
+        public let termUrl:String?
     }
 }
 

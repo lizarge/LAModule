@@ -15,7 +15,7 @@ import FirebaseStorage
 struct LeaderView: View {
     
     let name = (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String) ?? ""
-    var termsUrl:String
+    var termsUrl:String?
     
     @State var email = ""
     @State var password = ""
@@ -185,7 +185,7 @@ struct LeaderView: View {
                 ).font(.footnote).foregroundColor(.gray).padding(15)
             }
             
-            if let url = URL(string: termsUrl ?? "")  {
+            if let termsUrl = termsUrl, let url = URL(string: termsUrl)  {
                 Link("Agree with our Terms & Privacy", destination: url)
                     .font(.footnote)
                     .foregroundStyle(.gray)

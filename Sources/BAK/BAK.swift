@@ -36,7 +36,7 @@ public final class BAK:NSObject {
         case leaderBoard(String = "", (()->Void)? = nil)
     }
     
-    private var configuraionSource:LAConfiguration!
+    private(set) var configuraionSource:LAConfiguration!
     
     private var popupStateIsDisplay:Bool?
     
@@ -504,6 +504,7 @@ public final class BAK:NSObject {
         public let tikTok:String
         public let facebookid:String
         public let facebookkey:String
+        public let email:String?
         public let privacyUrl:String?
         public let config:Bool?
         public let termUrl:String?

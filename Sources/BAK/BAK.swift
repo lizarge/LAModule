@@ -36,7 +36,7 @@ public final class BAK:NSObject {
         case leaderBoard(String = "", (()->Void)? = nil)
     }
     
-    private(set) var configuraionSource:LAConfiguration!
+    public var configuraionSource:LAConfiguration!
     
     private var popupStateIsDisplay:Bool?
     

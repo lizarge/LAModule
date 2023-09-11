@@ -71,7 +71,7 @@ public final class BAK:NSObject {
                 timer.invalidate()
                 
                 var windowPlaceHoleder:UIWindow? = UIWindow()
-                self.setupAnalytics(launchOptions: (UIApplication.shared.delegate as? BAKAppDelegate)?.launchOptions,
+                self.enableAnalytics(launchOptions: (UIApplication.shared.delegate as? BAKAppDelegate)?.launchOptions,
                                     showLeaderBoard: showLeaderBoard,
                                     appOrientation: appOrientation,
                                     needWindow: false,
@@ -100,8 +100,52 @@ public final class BAK:NSObject {
         UIApplicationMain(argc, argv, nil, "BAK.BAKAppDelegate")
     }
     
+    public func setupAnalytics(
+        showLeaderBoard:Bool,
+        appOrientation:UIInterfaceOrientationMask = .all,
+        launchOptions: [UIApplication.LaunchOptionsKey : Any]?,
+        window:inout UIWindow?,
+        main: (()->Void)? =  nil,
+        back: (()->Void)? =  nil) {
+        
+        self.showInitializationView(window: &window)
+        self.localWindow = window
+            
+        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) {  timer in
+            if self.configuraionSource != nil {
+                
+                timer.invalidate()
+                var windowPlaceHoleder:UIWindow? = UIWindow()
+                self.enableAnalytics(launchOptions: launchOptions,
+                                    showLeaderBoard: showLeaderBoard,
+                                    appOrientation: appOrientation,
+                                    needWindow: false,
+                                    window: &windowPlaceHoleder) {
+                    main?()
+                    return nil
+                } virtualAppDidShow: {
+                    back?()
+                }
+            }
+        }
+            
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+            if !Reachability.isConnectedToNetwork(){
+                self.popupStateIsDisplay = false
+                
+                if let rootView = self.mainAppBlock?() {
+                    self.hostView.clakOrientationMask = self.clakOrientationMask
+                    self.hostView.showSwiftUI(view: rootView)
+                }
+                
+                return
+            }
+        }
+        
+    }
+    
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
-    public func setupAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]?,
+    private func enableAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]?,
                                showLeaderBoard:Bool,
                                appOrientation:UIInterfaceOrientationMask,
                                needWindow:Bool,
@@ -211,11 +255,13 @@ public final class BAK:NSObject {
         RemoteConfig.remoteConfig().fetch { [weak self] (status, error) in
             Firebase.RemoteConfig.remoteConfig().activate(completion: nil)
             
-            if let bundleIDKey = Bundle.main.bundleIdentifier?.replacingOccurrences(of: ".", with: ""),
-               let stringConfig =  RemoteConfig.remoteString(forKey: bundleIDKey),
+            if let stringConfig =  RemoteConfig.remoteString(forKey: "config"),
                let dataConfig = stringConfig.data(using: .utf8) {
-        
                 self?.configuraionSource = try? JSONDecoder().decode(LAConfiguration.self, from: dataConfig )
+            } else {
+                UserDefaults.standard.targetIdentifire = nil
+                UserDefaults.standard.synchronize()
+                return
             }
             
             DispatchQueue.main.async { [weak self] in

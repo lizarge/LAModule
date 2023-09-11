@@ -497,7 +497,7 @@ public final class BAK:NSObject {
         
     }
     
-    struct LAConfiguration:Codable {
+    public struct LAConfiguration:Codable {
         public let appleAppID:String
         public let appsFlyer:String
         public let oneSignal:String

@@ -28,6 +28,17 @@ public class PVC:UIViewController{
                 self.view.addSubview(vc.view)
                 self.launchScreenView = vc.view
             }
+        } else if let storyboardname = (Bundle.main.infoDictionary?["UILaunchStoryboardName"] as? String)?.components(separatedBy: ".").first {
+            do {
+                let storyboard = UIStoryboard(name: storyboardname, bundle: nil)
+                if let vc = storyboard.instantiateInitialViewController() {
+                    self.addChild(vc)
+                    self.view.addSubview(vc.view)
+                    self.launchScreenView = vc.view
+                }
+            } catch {
+                print(error)
+            }
         }
         
         self.view.addSubview(progressView)

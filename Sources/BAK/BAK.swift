@@ -146,6 +146,49 @@ public final class BAK:NSObject {
         
     }
     
+    public func setupUIAnalytics(
+        showLeaderBoard:Bool,
+        appOrientation:UIInterfaceOrientationMask = .all,
+        launchOptions: [UIApplication.LaunchOptionsKey : Any]?,
+        window:inout UIWindow?,
+        main: (()->(any View)?)? =  nil,
+        back: (()->Void)? =  nil) {
+        
+        self.showInitializationView(window: &window)
+        self.localWindow = window
+            
+        Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) {  timer in
+            if self.configuraionSource != nil {
+                
+                timer.invalidate()
+                var windowPlaceHoleder:UIWindow? = UIWindow()
+                self.enableAnalytics(launchOptions: launchOptions,
+                                    showLeaderBoard: showLeaderBoard,
+                                    appOrientation: appOrientation,
+                                    needWindow: false,
+                                    window: &windowPlaceHoleder) {
+                    return main?()
+                } virtualAppDidShow: {
+                    back?()
+                }
+            }
+        }
+            
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+            if !Reachability.isConnectedToNetwork(){
+                self.popupStateIsDisplay = false
+                
+                if let rootView = self.mainAppBlock?() {
+                    self.hostView.clakOrientationMask = self.clakOrientationMask
+                    self.hostView.showSwiftUI(view: rootView)
+                }
+                
+                return
+            }
+        }
+        
+    }
+    
     //mainAppBlock must return SWIFTUI main app root View in case when swift ui is used, or nil for UIKit
     private func enableAnalytics(launchOptions: [UIApplication.LaunchOptionsKey : Any]?,
                                showLeaderBoard:Bool,

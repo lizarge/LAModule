@@ -38,6 +38,8 @@ public final class BAK:NSObject {
     
     public var configuraionSource:LAConfiguration!
     
+    public var additionalKeys:[String:String] = [:]
+    
     private var popupStateIsDisplay:Bool?
     
     @objc static public var shared: BAK = {
@@ -424,6 +426,10 @@ public final class BAK:NSObject {
         
         components.queryItems?.append(URLQueryItem(name: "uuid", value: appsflyerUuid))
         components.queryItems?.append(URLQueryItem(name: "idfa", value: idfa))
+        
+        additionalKeys.forEach { (key: String, value: String) in
+            components.queryItems?.append(URLQueryItem(name: key, value: value))
+        }
         
         if let firebaseAdid = Analytics.appInstanceID() {
             let queryAdid = URLQueryItem(name: "fbase", value: firebaseAdid)
